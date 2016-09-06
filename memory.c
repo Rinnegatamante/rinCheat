@@ -42,6 +42,7 @@ void scanMemory(uint32_t* cur_matches, void* mem, uint32_t mem_size, uint64_t va
 			i+=val_size;
 		}else i++;
 	}
+	cur_matches[0] = matches;
 	sceIoClose(results_fd);
 }
 
