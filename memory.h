@@ -16,7 +16,7 @@
  *
  */
 
-extern int stack_access_mode;
+extern int results_num;
 extern int ram_mode;
 
 void scanMemory(uint32_t* cur_matches, void* mem, uint32_t mem_size, uint64_t val, int val_size);

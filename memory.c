@@ -23,7 +23,7 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
 #include "memory.h"
-int stack_access_mode = -2;
+int results_num = -2;
 int ram_mode = 0;
 static int results_fd = 0;
 
@@ -82,11 +82,11 @@ void scanResults(uint64_t val, int val_size){
 	uint32_t cur_val;
 	sceIoLseek(results_fd, 0x0, SEEK_SET);
 	int i = 0;
-	while (sceIoRead(results_fd, &cur_val, 4) > 0 && i < stack_access_mode){
+	while (sceIoRead(results_fd, &cur_val, 4) > 0 && i < results_num){
 		if (memcmp((uint8_t*)cur_val, &val, val_size) == 0){
 			sceIoWrite(fd, &cur_val, 4);
 			i++;
-		}else stack_access_mode--;
+		}else results_num--;
 	}
 	sceIoClose(fd);
 	sceIoClose(results_fd);
@@ -113,7 +113,7 @@ void injectMemory(uint64_t val, int val_size){
 	sceIoLseek(results_fd, 0x0, SEEK_SET);
 	uint32_t addr;
 	int i = 0;
-	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < stack_access_mode){
+	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < results_num){
 		injectValue((uint8_t*)addr,val,val_size);
 	}
 }
@@ -124,7 +124,7 @@ void saveOffsets(char* filename){
 	uint32_t addr;
 	int fd = sceIoOpen(filename, SCE_O_CREAT|SCE_O_WRONLY|SCE_O_APPEND, 0777);
 	int i = 0;
-	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < stack_access_mode){
+	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < results_num){
 		char data[16];
 		sprintf(data, "0x%lX\n", addr);
 		sceIoWrite(fd, data, strlen(data));

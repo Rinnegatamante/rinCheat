@@ -213,9 +213,9 @@ int main_thread(SceSize args, void *argp) {
 					blit_set_color(0x00ffffff);
 					
 					// Search menu results
-					if (menu_state == SEARCH_MENU && stack_access_mode != -2){
-						if (stack_access_mode == 0) blit_stringf(5, 225, "No matches");
-						else blit_stringf(5, 225, "Found %d matches", stack_access_mode);
+					if (menu_state == SEARCH_MENU && results_num != -2){
+						if (results_num == 0) blit_stringf(5, 225, "No matches");
+						else blit_stringf(5, 225, "Found %d matches", results_num);
 					}
 					
 					// Functions
@@ -345,17 +345,17 @@ int main_thread(SceSize args, void *argp) {
 										int_state = DO_ABS_SEARCH_EXT;
 										break;
 									case 4:
-										if (stack_access_mode != -2){
+										if (results_num != -2){
 											int_state = DO_REL_SEARCH;
 										}
 										break;
 									case 5:
-										if (stack_access_mode != -2){
+										if (results_num != -2){
 											int_state = INJECT_STACK;
 										}
 										break;
 									case 6:
-										if (stack_access_mode != -2){
+										if (results_num != -2){
 											int_state = SAVE_OFFSETS;
 										}
 										break;
@@ -471,7 +471,7 @@ int main_thread(SceSize args, void *argp) {
 				case DO_ABS_SEARCH:	
 				
 					blit_stringf(5, 35, "Scanning stack, please wait");
-					stack_access_mode = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
+					results_num = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
 					int_state = MENU;
 					break;
 					
@@ -546,8 +546,8 @@ int main_thread(SceSize args, void *argp) {
 				case DO_ABS_SEARCH_EXT:
 				
 					blit_stringf(5, 35, "Scanning memory, please wait");
-					stack_access_mode = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
-					stack_access_mode += scanHeap(dval, search_type[search_id]);
+					results_num = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
+					results_num += scanHeap(dval, search_type[search_id]);
 					int_state = MENU;
 					break;
 			}
