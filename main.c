@@ -315,7 +315,6 @@ int main_thread(SceSize args, void *argp) {
 													break;
 												case 4:
 													dval = (dval<<32)>>32;
-													break;
 												case 8:
 													break;
 											}
@@ -335,7 +334,6 @@ int main_thread(SceSize args, void *argp) {
 												break;
 											case 4:
 												dval = (dval<<32)>>32;
-												break;
 											case 8:
 												break;
 										}
@@ -410,14 +408,12 @@ int main_thread(SceSize args, void *argp) {
 												break;
 											case 4:
 												dval = (dval<<32)>>32;
-												break;
 											case 8:
 												break;
 										}
 									}
 									break;
 								}
-								break;
 							default:
 								break;
 						}
@@ -428,7 +424,6 @@ int main_thread(SceSize args, void *argp) {
 									search_idx--;
 									if (search_idx < 0) search_idx++;
 								}
-								break;
 							default:
 								break;
 						}
@@ -439,7 +434,6 @@ int main_thread(SceSize args, void *argp) {
 									search_idx++;
 									if (search_idx > (search_type[search_id]<<1)-1) search_idx--;
 								}
-								break;
 							default:
 								break;
 						}
@@ -501,7 +495,6 @@ int main_thread(SceSize args, void *argp) {
 							break;
 						case 4:
 							val = (val<<32)>>32;
-							break;
 						case 8:
 							break;
 					}
