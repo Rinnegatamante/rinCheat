@@ -65,9 +65,11 @@ int scanHeap(uint64_t val, int val_size){
 			if (sceKernelGetMemBlockInfoByAddr(heap_addr, &heap_info) >= 0){
 				uint32_t matches = 1;
 				scanMemory(&matches, heap_info.mappedBase, heap_info.mappedSize, val, val_size);
+				free(dummy);
 				return matches-1;
 			}
 		}
+		free(dummy);
 	}
 	return 0;
 }
