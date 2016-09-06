@@ -116,7 +116,7 @@ void restoreSavedataDir(char* folder, char* target){
 				file.buf = data;
 				file.bufSize = size;
 				file.offset = 0;
-                sceAppUtilSaveDataDataSave(&saveSlot, &file, 1, NULL, &requiredSize);
+				sceAppUtilSaveDataDataSave(&saveSlot, &file, 1, NULL, &requiredSize);
 				free(data);
 			}else{
 				char data[0x1000];
