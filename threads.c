@@ -27,10 +27,6 @@ int dummy_thread(SceSize args, void *argp){
 	for (;;){
 		if (term_stubs) sceKernelExitDeleteThread(0);
 	}
-	SceKernelThreadInfo main_thread;
-	main_thread.size = sizeof(SceKernelThreadInfo);
-	sceKernelGetThreadInfo(0x40010003, &main_thread);
-	sceKernelChangeThreadPriority(0x40010003, main_thread.initPriority);
 }
 void pauseMainThread(){
 	sceKernelChangeThreadPriority(0, 0x0);
@@ -61,4 +57,8 @@ void pauseMainThread(){
 void resumeMainThread(){
 	term_stubs = 1;
 	sceKernelChangeThreadPriority(0, 0x40);
+	SceKernelThreadInfo main_thread;
+	main_thread.size = sizeof(SceKernelThreadInfo);
+	sceKernelGetThreadInfo(0x40010003, &main_thread);
+	sceKernelChangeThreadPriority(0x40010003, main_thread.initPriority);
 }
