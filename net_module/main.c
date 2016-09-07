@@ -26,9 +26,21 @@
 #include <psp2/net/netctl.h>
 #include <psp2/ctrl.h>
 #include <psp2/io/fcntl.h>
+#include "ftpvita.h"
+
+// Requests type
+#define NONE 0
+#define FTP_SWITCH 1
+
+volatile uint8_t request = NONE;
 
 int main_thread(SceSize args, void *argp) {
 
+	// Internal states
+	uint8_t ftp_state = 0;
+	uint16_t vita_port;
+	int log;
+	
 	// Loading net module
 	sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
 	
@@ -49,8 +61,25 @@ int main_thread(SceSize args, void *argp) {
 	SceNetInAddr vita_addr;
 	sceNetInetPton(SCE_NET_AF_INET, info.ip_address, &vita_addr);
 	
+	// Writing on a temp file reuqest address in order to let main module to know about it
+	uint32_t addr = (uint32_t)&request;
+	int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_WRONLY|SCE_O_CREAT, 0777);
+	sceIoWrite(tmp, &addr, 4);
+	sceIoClose(tmp);
+	
+	SceKernelThreadInfo status;
+	status.size = sizeof(SceKernelThreadInfo);
 	for (;;){
 		sceKernelDelayThread(1000); // Just let VITA scheduler do its work
+		switch (request){
+			case FTP_SWITCH:
+				request = NONE; // Resetting request field
+				ftp_state = !ftp_state;
+				if (ftp_state) ftpvita_init(vita_ip, &vita_port);
+				else ftpvita_fini();
+			default:
+				break;
+		}
 	}
 	
 	return 0;

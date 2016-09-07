@@ -1,5 +1,5 @@
 TARGET  = net_module
-OBJS    = main.o
+OBJS    = main.o ftpvita.o
 
 LIBS    = -lSceSysmodule_stub -lSceKernel_stub -lSceNet_stub -lSceNetCtl_stub -lSceCtrl_stub -lSceLibc_stub
 

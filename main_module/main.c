@@ -57,6 +57,11 @@
 #define IMPORT_SAVEDATA 8
 #define STACK_RESTORE 9
 #define DO_ABS_SEARCH_EXT 10
+#define FTP_COMMUNICATION 11
+
+// Requests type for net module
+#define NONE 0
+#define FTP_SWITCH 1
 
 static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
 static int search_type[] = {1, 2, 4, 8};
@@ -68,6 +73,7 @@ int main_thread(SceSize args, void *argp) {
 	sceIoMkdir("ux0:/data/rinCheat/db", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/screenshots", 0777);
 	int started = 0;
+	int ftp = 0;
 	int menu_state = MAIN_MENU;
 	int int_state = MENU;
 	int menu_idx = 0;
@@ -81,6 +87,12 @@ int main_thread(SceSize args, void *argp) {
 	
 	// Loading net module
 	sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
+	sceKernelDelayThread(1 * 1000 * 1000); // Wait till net module did its stuffs
+	uint32_t addr;
+	int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_RDONLY|SCE_O_CREAT, 0777);
+	sceIoRead(tmp, &addr, 4);
+	sceIoClose(tmp);
+	uint8_t* net_request = (uint8_t*)addr; // Address of the volatile variable used by net module to check requests
 	
 	// Attaching game main thread
 	SceKernelThreadInfo status;
@@ -113,12 +125,12 @@ int main_thread(SceSize args, void *argp) {
 	
 	// Menus setup
 	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Cheats List"};
-	char* opt_main[] = {"Game Cheats","Game Hacks","Export decrypted savedata","Import decrypted savedata"};
+	char* opt_main[] = {"Game Cheats","Game Hacks","Export decrypted savedata","Import decrypted savedata","FTP State: "};
 	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/stack.bin", "Inject stack from ux0:/stack.bin", "Return Main Menu"};
 	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ","Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
 	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Save offsets","Return Cheats Menu"};
 	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search};
-	int num_opt[] = {4, 5, 6, 8};
+	int num_opt[] = {5, 5, 6, 8};
 	
 	// Main loop
 	for (;;){
@@ -177,7 +189,16 @@ int main_thread(SceSize args, void *argp) {
 									default:
 										blit_stringf(5, y, opt[menu_state][m_idx]);
 										break;
-								}							
+								}
+							}else if (menu_state == MAIN_MENU){
+								switch (m_idx){
+									case 4:
+										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], ftp ? "On" : "Off");
+										break;
+									default:
+										blit_stringf(5, y, opt[menu_state][m_idx]);
+										break;
+								}
 							}else if (menu_state == SEARCH_MENU){
 								switch (m_idx){
 									case 0:
@@ -243,7 +264,10 @@ int main_thread(SceSize args, void *argp) {
 										break;
 									case 3:
 										int_state = IMPORT_SAVEDATA;
-										break;	
+										break;
+									case 4:
+										int_state = FTP_COMMUNICATION;
+										break;
 								}								
 								break;
 							case CHEATS_MENU:
@@ -555,6 +579,15 @@ int main_thread(SceSize args, void *argp) {
 					results_num += scanHeap(dval, search_type[search_id]);
 					int_state = MENU;
 					break;
+					
+				case FTP_COMMUNICATION:
+					
+					blit_stringf(5, 35, "Sending request to net module, please wait");
+					ftp = !ftp;
+					net_request[0] = FTP_SWITCH;
+					int_state = MENU;
+					break;
+					
 			}
 		}else{
 			if ((pad.buttons & SCE_CTRL_SELECT) && (pad.buttons & SCE_CTRL_START)){
