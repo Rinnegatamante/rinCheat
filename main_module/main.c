@@ -26,6 +26,8 @@
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
 #include <psp2/appmgr.h>
+#include <psp2/net/net.h>
+#include <psp2/net/netctl.h>
 #include <psp2/display.h>
 #include <psp2/kernel/modulemgr.h>
 #include <psp2/kernel/processmgr.h>
@@ -76,6 +78,9 @@ int main_thread(SceSize args, void *argp) {
 	int search_idx = 7;
 	char temp[128];
 	uint64_t dval = 0;
+	
+	// Loading net module
+	sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
 	
 	// Attaching game main thread
 	SceKernelThreadInfo status;
