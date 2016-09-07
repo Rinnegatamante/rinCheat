@@ -167,5 +167,6 @@ int blit_stringf(int sx, int sy, const char *msg, ...)
 }
 
 void blit_clearscreen(){
-	memset(vram32, bcolor, (bufferwidth*pheight+pwidth)<<2);
+	blit_setup();
+	memset(vram32, bcolor, (bufferwidth*pheight)<<2);
 }

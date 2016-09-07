@@ -76,6 +76,8 @@ int main_thread(SceSize args, void *argp) {
 	int ftp = 0;
 	int menu_state = MAIN_MENU;
 	int int_state = MENU;
+	int old_int_state = int_state;
+	int old_menu_state = menu_state;
 	int menu_idx = 0;
 	int screenshot = 0;
 	int auto_suspend = 1;
@@ -152,13 +154,18 @@ int main_thread(SceSize args, void *argp) {
 		if (started){
 			sceDisplayWaitVblankStart();
 			blit_setup();
-			blit_clearscreen(); //FIXME: Text flicks, why?
-			sceDisplayWaitVblankStart();
+			uint64_t i;
 			if (menu_state != CHEATS_LIST) blit_stringf(5, 5, "rinCheat v.0.1 - %s", menus[menu_state]);
 			else blit_stringf(5, 5, "rinCheat v.0.1 - %s (%d available)", menus[menu_state],numCheats);
 			int m_idx = 0;
 			int y = 35;
-			
+			if (int_state != old_int_state){ 
+				blit_clearscreen();
+				old_int_state = int_state;
+			}else if (menu_state != old_menu_state){
+				blit_clearscreen();
+				old_menu_state = menu_state;
+			}
 			switch (int_state){
 			
 				case MENU:
@@ -316,9 +323,11 @@ int main_thread(SceSize args, void *argp) {
 										else scePowerSetGpuClockFrequency(111);
 										break;
 									case 3:
+										blit_clearscreen();
 										auto_suspend = !auto_suspend;
 										break;
 									case 4:
+										blit_clearscreen();
 										screenshot = !screenshot;
 										break;
 									case 5:
@@ -422,6 +431,7 @@ int main_thread(SceSize args, void *argp) {
 					}else if ((pad.buttons & SCE_CTRL_SQUARE) && (!(oldpad.buttons & SCE_CTRL_SQUARE))){
 						switch (menu_state){
 							case SEARCH_MENU:
+								blit_clearscreen();
 								if (menu_idx == 0){
 									i = search_val[14-((search_type[search_id]-1)<<1)+search_idx]-0x30;
 									if (i > 0){
@@ -595,6 +605,7 @@ int main_thread(SceSize args, void *argp) {
 				started = 1;
 				menu_state = MAIN_MENU;
 				menu_idx = 0;
+				blit_clearscreen();
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
 		oldpad = pad;
