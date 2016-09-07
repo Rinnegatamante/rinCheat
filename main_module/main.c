@@ -595,7 +595,7 @@ int main_thread(SceSize args, void *argp) {
 				started = 1;
 				menu_state = MAIN_MENU;
 				menu_idx = 0;
-			}
+			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
 		oldpad = pad;
 	}
