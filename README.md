@@ -14,6 +14,7 @@ THIS TOOL HAS BEEN RELEASED JUST FOR TESTING PURPOSES. THIS IS NOT FINISHED AND 
 - Decrypted savedata export/import
 - Stack dumping/restoring
 - Autosuspend hack to disable autosuspend feature of PSVITA
+- FTP support during game sessions
 
 ## How to install and use
 
