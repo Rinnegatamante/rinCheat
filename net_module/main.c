@@ -66,9 +66,10 @@ int main_thread(SceSize args, void *argp) {
 	int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_WRONLY|SCE_O_CREAT, 0777);
 	sceIoWrite(tmp, &addr, 4);
 	sceIoClose(tmp);
+	tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_WRONLY|SCE_O_CREAT|SCE_O_TRUNC, 0777);
+	sceIoWrite(tmp, vita_ip, strlen(vita_ip));
+	sceIoClose(tmp);
 	
-	SceKernelThreadInfo status;
-	status.size = sizeof(SceKernelThreadInfo);
 	for (;;){
 		sceKernelDelayThread(1000); // Just let VITA scheduler do its work
 		switch (request){

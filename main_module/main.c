@@ -85,6 +85,7 @@ int main_thread(SceSize args, void *argp) {
 	char search_val[] = "0000000000000000";
 	int search_idx = 7;
 	char temp[128];
+	char vita_ip[32];
 	uint64_t dval = 0;
 	
 	// Loading net module
@@ -154,7 +155,6 @@ int main_thread(SceSize args, void *argp) {
 		if (started){
 			sceDisplayWaitVblankStart();
 			blit_setup();
-			uint64_t i;
 			if (menu_state != CHEATS_LIST) blit_stringf(5, 5, "rinCheat v.0.1 - %s", menus[menu_state]);
 			else blit_stringf(5, 5, "rinCheat v.0.1 - %s (%d available)", menus[menu_state],numCheats);
 			int m_idx = 0;
@@ -200,7 +200,7 @@ int main_thread(SceSize args, void *argp) {
 							}else if (menu_state == MAIN_MENU){
 								switch (m_idx){
 									case 4:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], ftp ? "On" : "Off");
+										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], ftp ? "On - Listening on " : "Off", ftp ? vita_ip : "");
 										break;
 									default:
 										blit_stringf(5, y, opt[menu_state][m_idx]);
@@ -595,6 +595,10 @@ int main_thread(SceSize args, void *argp) {
 					blit_stringf(5, 35, "Sending request to net module, please wait");
 					ftp = !ftp;
 					net_request[0] = FTP_SWITCH;
+					int tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_RDONLY, 0777);
+					int size = sceIoRead(tmp, vita_ip, 32);
+					vita_ip[size] = 0;
+					sceIoClose(tmp);
 					int_state = MENU;
 					break;
 					
