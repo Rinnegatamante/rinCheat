@@ -43,14 +43,7 @@ void pauseMainThread(){
 		sceKernelGetThreadInfo(0x40010003, &main_thread);
 		sceKernelChangeThreadPriority(0x40010003, 0x7F);
 		if (main_thread.status == SCE_THREAD_RUNNING){
-			term_stubs = 1;
-			sceKernelDelayThread(1000);
-			term_stubs = 0;
-			for (i=0;i<2;i++){
-				SceUID thid = sceKernelCreateThread("dummy thread", dummy_thread, 0x0, 0x40000, 0, 0, NULL);
-				if (thid >= 0)
-					sceKernelStartThread(thid, 0, NULL);
-			}
+			sceKernelDelayThread(1000); // Rescheduling until main thread is in WAITING status
 		}else break;
 	}
 }
