@@ -110,16 +110,19 @@ void injectStackFile(void* stack_ptr, int stack_size, char* file){
 
 // Inject multiple values on memory (MMC storage)
 void injectMemory(uint64_t val, int val_size){
+	int results_fd  = sceIoOpen("ux0:/data/rinCheat/rinCheat_temp.bin", SCE_O_RDONLY | SCE_O_CREAT, 0777);
 	sceIoLseek(results_fd, 0x0, SEEK_SET);
 	uint32_t addr;
 	int i = 0;
 	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < results_num){
 		injectValue((uint8_t*)addr,val,val_size);
 	}
+	sceIoClose(results_fd);
 }
 
 // Save offsets from results on MMC (MMC storage)
 void saveOffsets(char* filename){
+	int results_fd  = sceIoOpen("ux0:/data/rinCheat/rinCheat_temp.bin", SCE_O_RDONLY | SCE_O_CREAT, 0777);
 	sceIoLseek(results_fd, 0x0, SEEK_SET);
 	uint32_t addr;
 	int fd = sceIoOpen(filename, SCE_O_CREAT|SCE_O_WRONLY|SCE_O_APPEND, 0777);
@@ -130,4 +133,5 @@ void saveOffsets(char* filename){
 		sceIoWrite(fd, data, strlen(data));
 	}
 	sceIoClose(fd);
+	sceIoClose(results_fd);
 }
