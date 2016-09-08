@@ -76,8 +76,12 @@ int main_thread(SceSize args, void *argp) {
 			case FTP_SWITCH:
 				request = NONE; // Resetting request field
 				ftp_state = !ftp_state;
-				if (ftp_state) ftpvita_init(vita_ip, &vita_port);
-				else ftpvita_fini();
+				if (ftp_state){
+					ftpvita_add_device("app0:");
+					ftpvita_add_device("ux0:");
+					ftpvita_add_device("savedata0:");
+					ftpvita_init(vita_ip, &vita_port);
+				}else ftpvita_fini();
 			default:
 				break;
 		}
