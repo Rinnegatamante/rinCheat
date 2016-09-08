@@ -5,7 +5,7 @@ LIBS    = -lSceSysmodule_stub -lSceKernel_stub -lSceNet_stub -lSceNetCtl_stub -l
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
-CFLAGS  = -Wl,-q -Wall -O3 -nostartfiles
+CFLAGS  = -g -Wl,-q -Wall -O3 -nostartfiles
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).suprx
