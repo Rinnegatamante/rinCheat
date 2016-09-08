@@ -25,7 +25,6 @@
 #include "memory.h"
 int results_num = -2;
 int ram_mode = 0;
-static int results_fd = 0;
 
 // Generic memory scanner (MMC storage)
 void scanMemory(uint32_t* cur_matches, void* mem, uint32_t mem_size, uint64_t val, int val_size){
