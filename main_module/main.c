@@ -49,7 +49,7 @@
 #define MENU 0
 #define STACK_DUMP 1
 #define DO_ABS_SEARCH 2
-#define INJECT_STACK 3
+#define INJECT_MEMORY 3
 #define DO_REL_SEARCH 4
 #define SAVE_OFFSETS 5
 #define APPLY_CHEAT 6
@@ -89,13 +89,23 @@ int main_thread(SceSize args, void *argp) {
 	uint64_t dval = 0;
 	
 	// Loading net module
-	sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
-	sceKernelDelayThread(1 * 1000 * 1000); // Wait till net module did its stuffs
-	uint32_t addr;
-	int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_RDONLY|SCE_O_CREAT, 0777);
-	sceIoRead(tmp, &addr, 4);
-	sceIoClose(tmp);
-	uint8_t* net_request = (uint8_t*)addr; // Address of the volatile variable used by net module to check requests
+	uint32_t addr = 0;
+	uint8_t* net_request = NULL;
+	int ret = sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
+	if (ret >= 0){
+		sceKernelDelayThread(1 * 1000 * 1000); // Wait till net module did its stuffs
+		
+		// Check if the net thread is still opened or it exited cause errors
+		int thid = searchThreadByName("rinCheat_net");
+		if (thid != 0){
+		
+			int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_RDONLY|SCE_O_CREAT, 0777);
+			sceIoRead(tmp, &addr, 4);
+			sceIoClose(tmp);
+			net_request = (uint8_t*)addr; // Address of the volatile variable used by net module to check requests
+	
+		}
+	}
 	
 	// Attaching game main thread
 	SceKernelThreadInfo status;
@@ -273,7 +283,7 @@ int main_thread(SceSize args, void *argp) {
 										int_state = IMPORT_SAVEDATA;
 										break;
 									case 4:
-										int_state = FTP_COMMUNICATION;
+										if (net_request != NULL) int_state = FTP_COMMUNICATION;
 										break;
 								}								
 								break;
@@ -389,7 +399,7 @@ int main_thread(SceSize args, void *argp) {
 										break;
 									case 5:
 										if (results_num != -2){
-											int_state = INJECT_STACK;
+											int_state = INJECT_MEMORY;
 										}
 										break;
 									case 6:
@@ -521,9 +531,9 @@ int main_thread(SceSize args, void *argp) {
 					int_state = MENU;
 					break;
 					
-				case INJECT_STACK:
+				case INJECT_MEMORY:
 				
-					blit_stringf(5, 35, "Injecting stack, please wait");
+					blit_stringf(5, 35, "Injecting memory, please wait");
 					sscanf(search_val,"%llX",&val);
 					switch (search_type[search_id]){
 						case 1:

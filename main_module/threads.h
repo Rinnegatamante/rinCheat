@@ -18,3 +18,4 @@
 
 void pauseMainThread();
 void resumeMainThread();
+int searchThreadByName(char* name);

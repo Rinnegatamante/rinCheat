@@ -15,7 +15,24 @@
  * Copyright (c) Rinnegatamante <rinnegatamante@gmail.com>
  *
  */
+#include <string.h>
+#include <psp2/types.h>
 #include <psp2/kernel/threadmgr.h>
+
+#define THREADS_RANGE 0x1000 // How many thread to scan starting from main thread
+
+int searchThreadByName(char* name){
+	int i = 1;
+	SceKernelThreadInfo status;
+	status.size = sizeof(SceKernelThreadInfo);
+	while (i <= THREADS_RANGE){
+		int ret = sceKernelGetThreadInfo(0x40010003 + i, &status);
+		if (ret >= 0 && strcmp(status.name, name) == 0) break;
+		i++;
+	}
+	if (i > THREADS_RANGE) return 0; // Not found
+	return 0x40010003 + i;
+}
 
 /*
  * Tricky way to freeze main thread, we set our plugin priority to 0 (max)

@@ -39,7 +39,6 @@ int main_thread(SceSize args, void *argp) {
 	// Internal states
 	uint8_t ftp_state = 0;
 	uint16_t vita_port;
-	int log;
 	
 	// Loading net module
 	sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
@@ -54,9 +53,11 @@ int main_thread(SceSize args, void *argp) {
 		initparam.flags = 0;
 		ret=sceNetInit(&initparam);
 	}
+	if (ret < 0) sceKernelExitDeleteThread(0);
 	ret = sceNetCtlInit();
+	if (ret < 0) sceKernelExitDeleteThread(0);
 	SceNetCtlInfo info;
-	ret=sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info);
+	sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info);
 	sprintf(vita_ip,"%s",info.ip_address);
 	SceNetInAddr vita_addr;
 	sceNetInetPton(SCE_NET_AF_INET, info.ip_address, &vita_addr);
