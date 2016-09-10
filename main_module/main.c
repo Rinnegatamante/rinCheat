@@ -130,6 +130,14 @@ int main_thread(SceSize args, void *argp) {
 		}
 	}
 	
+	// Check if Heap Scanner is usable
+	uint8_t heap_scanner = 0;
+	uint8_t* dummy = (uint8_t*)malloc(1);
+	if (dummy != NULL){
+		heap_scanner = 1;
+		free(dummy);
+	}
+	
 	// Getting title info
 	char titleid[16], title[256];
 	sceAppMgrAppParamGetString(0, 9, title , 256);
@@ -268,7 +276,7 @@ int main_thread(SceSize args, void *argp) {
 						else blit_stringf(5, 225, "Found %d matches", results_num);
 					}
 					
-					// Net module status
+					// Extra features status
 					if (menu_state == MAIN_MENU){
 						if (net_thread != 0){
 							blit_set_color(GREEN);
@@ -276,6 +284,13 @@ int main_thread(SceSize args, void *argp) {
 						}else{
 							blit_set_color(RED);
 							blit_stringf(5, 225, "NET MODULE: exited");
+						}
+						if (heap_scanner != 0){
+							blit_set_color(GREEN);
+							blit_stringf(5, 245, "HEAP SCANNER: ready");
+						}else{
+							blit_set_color(RED);
+							blit_stringf(5, 245, "HEAP SCANNER: unavailable");
 						}
 						blit_set_color(WHITE);
 					}
@@ -615,7 +630,7 @@ int main_thread(SceSize args, void *argp) {
 				
 					blit_stringf(5, 35, "Scanning memory, please wait");
 					results_num = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
-					results_num += scanHeap(dval, search_type[search_id]);
+					if (heap_scanner) results_num += scanHeap(dval, search_type[search_id]);
 					int_state = MENU;
 					break;
 					
