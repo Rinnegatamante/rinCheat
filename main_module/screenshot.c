@@ -39,6 +39,7 @@ void takeScreenshot(char* titleid){
 	uint8_t* bmp_content;
 	if (ram_mode) bmp_content = (uint8_t*)malloc(((param.pitch*param.height)<<2)+0x36);
 	else bmp_content = (uint8_t*)temp;
+	if (bmp_content == NULL) bmp_content = temp; // Not enough heap, temporary using MMC mode
 	memset(bmp_content, 0, 0x36);
 	*(uint16_t*)&bmp_content[0x0] = 0x4D42;
 	*(uint32_t*)&bmp_content[0x2] = ((param.pitch*param.height)<<2)+0x36;
@@ -48,7 +49,7 @@ void takeScreenshot(char* titleid){
 	*(uint32_t*)&bmp_content[0x16] = param.height;
 	*(uint32_t*)&bmp_content[0x1A] = 0x00200001;
 	*(uint32_t*)&bmp_content[0x22] = ((param.pitch*param.height)<<2);
-	if (!ram_mode){
+	if (bmp_content == temp){
 		sceIoWrite(fd, bmp_content, 0x36);
 		int x, y, i;
 		i = 0;
@@ -58,9 +59,11 @@ void takeScreenshot(char* titleid){
 			for (x = 0; x<param.pitch; x++){
 				buffer[i] = framebuf[x+(param.height-y)*param.pitch];
 				uint8_t* clr = (uint8_t*)&buffer[i];
-				uint8_t r = clr[1];
-				clr[1] = clr[3];
-				clr[3] = r;
+				uint8_t g = clr[1];
+				uint8_t r = clr[2];
+				uint8_t a = clr[3];
+				uint8_t b = clr[0];
+				buffer[i] = (a<<24) | (b<<16) | (g<<8) | r;
 				i++;
 				if (i == 1024){
 					i = 0;
