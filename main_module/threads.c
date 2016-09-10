@@ -21,6 +21,8 @@
 
 #define THREADS_RANGE 0x1000 // How many thread to scan starting from main thread
 
+extern int net_thread;
+
 int searchThreadByName(char* name){
 	int i = 1;
 	SceKernelThreadInfo status;
@@ -47,10 +49,11 @@ int dummy_thread(SceSize args, void *argp){
 }
 void pauseMainThread(){
 	sceKernelChangeThreadPriority(0, 0x0);
+	if (net_thread != 0) sceKernelChangeThreadPriority(net_thread, 0x0);
 	int i;
 	term_stubs = 0;
-	for (i=0;i<2;i++){
-		SceUID thid = sceKernelCreateThread("dummy thread", dummy_thread, 0x0, 0x40000, 0, 0, NULL);
+	for (i=0;i<((net_thread != 0) ? 1 : 2);i++){
+		SceUID thid = sceKernelCreateThread("dummy thread", dummy_thread, 0x0, 0x10000, 0, 0, NULL);
 		if (thid >= 0)
 			sceKernelStartThread(thid, 0, NULL);
 	}

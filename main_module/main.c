@@ -63,9 +63,16 @@
 #define NONE 0
 #define FTP_SWITCH 1
 
+// Color values
+#define WHITE 0x00ffffff
+#define YELLOW 0x0000ffff
+#define RED 0x000000ff
+#define GREEN 0x0000ff00
+
 static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
 static int search_type[] = {1, 2, 4, 8};
-
+int net_thread = 0;
+	
 int main_thread(SceSize args, void *argp) {
 	
 	sceKernelDelayThread(5 * 1000 * 1000);
@@ -96,8 +103,8 @@ int main_thread(SceSize args, void *argp) {
 		sceKernelDelayThread(1 * 1000 * 1000); // Wait till net module did its stuffs
 		
 		// Check if the net thread is still opened or it exited cause errors
-		int thid = searchThreadByName("rinCheat_net");
-		if (thid != 0){
+		net_thread = searchThreadByName("rinCheat_net");
+		if (net_thread != 0){
 		
 			int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_RDONLY|SCE_O_CREAT, 0777);
 			sceIoRead(tmp, &addr, 4);
@@ -183,8 +190,8 @@ int main_thread(SceSize args, void *argp) {
 					// Drawing Menu
 					if (menu_state != CHEATS_LIST){ // Static menus
 						while (m_idx < num_opt[menu_state]){
-							uint32_t clr = 0x00ffffff;
-							if (m_idx == menu_idx) clr = 0x0000ffff;
+							uint32_t clr = WHITE;
+							if (m_idx == menu_idx) clr = YELLOW;
 							blit_set_color(clr);
 							if (menu_state == HACKS_MENU){
 								switch (m_idx){
@@ -219,7 +226,7 @@ int main_thread(SceSize args, void *argp) {
 							}else if (menu_state == SEARCH_MENU){
 								switch (m_idx){
 									case 0:
-										blit_set_color(0x00ffffff);
+										blit_set_color(WHITE);
 										blit_stringf(5, y, "%s0x%s (%llu)", opt[menu_state][m_idx], &search_val[14-((search_type[search_id]-1)<<1)], dval);
 										blit_set_color(clr);
 										blit_stringf(5, y, "%s", opt[menu_state][m_idx]);
@@ -240,9 +247,9 @@ int main_thread(SceSize args, void *argp) {
 						cur = db;
 						while (y <= 460 && cur != NULL){
 							if (m_idx >= menu_idx){
-								uint32_t clr = 0x00ffffff;
+								uint32_t clr = WHITE;
 								if (m_idx == menu_idx){
-									clr = 0x0000ffff;
+									clr = YELLOW;
 									sel = cur;
 								}
 								blit_set_color(clr);
@@ -253,12 +260,24 @@ int main_thread(SceSize args, void *argp) {
 							cur = cur->next;
 						}
 					}
-					blit_set_color(0x00ffffff);
+					blit_set_color(WHITE);
 					
 					// Search menu results
 					if (menu_state == SEARCH_MENU && results_num != -2){
 						if (results_num == 0) blit_stringf(5, 225, "No matches");
 						else blit_stringf(5, 225, "Found %d matches", results_num);
+					}
+					
+					// Net module status
+					if (menu_state == MAIN_MENU){
+						if (net_thread != 0){
+							blit_set_color(GREEN);
+							blit_stringf(5, 225, "NET MODULE: running");
+						}else{
+							blit_set_color(RED);
+							blit_stringf(5, 225, "NET MODULE: exited");
+						}
+						blit_set_color(WHITE);
 					}
 					
 					// Functions
@@ -283,7 +302,7 @@ int main_thread(SceSize args, void *argp) {
 										int_state = IMPORT_SAVEDATA;
 										break;
 									case 4:
-										if (net_request != NULL) int_state = FTP_COMMUNICATION;
+										if (net_thread != 0) int_state = FTP_COMMUNICATION;
 										break;
 								}								
 								break;

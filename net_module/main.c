@@ -39,6 +39,7 @@ int main_thread(SceSize args, void *argp) {
 	// Internal states
 	uint8_t ftp_state = 0;
 	uint16_t vita_port;
+	uint8_t paused = 0;
 	
 	// Loading net module
 	sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
@@ -71,8 +72,16 @@ int main_thread(SceSize args, void *argp) {
 	sceIoWrite(tmp, vita_ip, strlen(vita_ip));
 	sceIoClose(tmp);
 	
+	SceCtrlData pad, oldpad;
+	
 	for (;;){
-		sceKernelDelayThread(1000); // Just let VITA scheduler do its work
+		sceCtrlPeekBufferPositive(0, &pad, 1);
+		if (!paused){
+			if ((pad.buttons & SCE_CTRL_SELECT) && (pad.buttons & SCE_CTRL_START)) paused = 1;
+			else sceKernelDelayThread(1000); // Just let VITA scheduler do its work
+		}else{
+			if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))) paused = 0;
+		}
 		switch (request){
 			case FTP_SWITCH:
 				request = NONE; // Resetting request field
@@ -86,6 +95,7 @@ int main_thread(SceSize args, void *argp) {
 			default:
 				break;
 		}
+		oldpad = pad;
 	}
 	
 	return 0;
