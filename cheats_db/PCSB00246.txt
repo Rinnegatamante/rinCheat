@@ -1,4 +1,4 @@
-#9 Lives
-@0x8128034C @0x09 @1
+#99 Lives
+@0x8128034C @0x63 @1
 #many calories
 @0x81280360 @0x00FFFFFF @4 
