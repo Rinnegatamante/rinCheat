@@ -629,7 +629,7 @@ int main_thread(SceSize args, void *argp) {
 }
 
 int _start(SceSize args, void *argp) {
-	SceUID thid = sceKernelCreateThread("rinCheat", main_thread, 0x40, 0x600000, 0, 0, NULL);
+	SceUID thid = sceKernelCreateThread("rinCheat", main_thread, 0x40, 0x400000, 0, 0, NULL);
 	if (thid >= 0)
 		sceKernelStartThread(thid, 0, NULL);
 
