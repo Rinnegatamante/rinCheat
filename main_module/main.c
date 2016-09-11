@@ -72,7 +72,7 @@
 static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
 static int search_type[] = {1, 2, 4, 8};
 int net_thread = 0;
-	
+
 int main_thread(SceSize args, void *argp) {
 	
 	sceKernelDelayThread(5 * 1000 * 1000);
@@ -156,10 +156,10 @@ int main_thread(SceSize args, void *argp) {
 	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Cheats List"};
 	char* opt_main[] = {"Game Cheats","Game Hacks","Export decrypted savedata","Import decrypted savedata","FTP State: "};
 	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/stack.bin", "Inject stack from ux0:/stack.bin", "Return Main Menu"};
-	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ","Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
+	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ", "GPU Crossbar Clock: ", "Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
 	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Save offsets","Return Cheats Menu"};
 	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search};
-	int num_opt[] = {5, 5, 6, 8};
+	int num_opt[] = {5, 5, 7, 8};
 	
 	// Main loop
 	for (;;){
@@ -214,9 +214,12 @@ int main_thread(SceSize args, void *argp) {
 										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuClockFrequency());
 										break;
 									case 3:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], auto_suspend ? "On" : "Off");
+										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuXbarClockFrequency());
 										break;
 									case 4:
+										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], auto_suspend ? "On" : "Off");
+										break;
+									case 5:
 										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], screenshot ? "On" : "Off");
 										break;
 									default:
@@ -371,14 +374,22 @@ int main_thread(SceSize args, void *argp) {
 										if (freq == scePowerGetGpuClockFrequency()) scePowerSetGpuClockFrequency(111);
 										break;
 									case 3:
-										blit_clearscreen();
-										auto_suspend = !auto_suspend;
+										i = 0;
+										freq = scePowerGetGpuXbarClockFrequency();
+										while(freq_list[i] != freq){i++;}
+										if (freq < 222) scePowerSetGpuXbarClockFrequency(freq_list[i+1]);
+										else scePowerSetGpuXbarClockFrequency(111);
+										if (freq == scePowerGetGpuXbarClockFrequency()) scePowerSetGpuXbarClockFrequency(111);
 										break;
 									case 4:
 										blit_clearscreen();
-										screenshot = !screenshot;
+										auto_suspend = !auto_suspend;
 										break;
 									case 5:
+										blit_clearscreen();
+										screenshot = !screenshot;
+										break;
+									case 6:
 										menu_idx = 1;
 										menu_state = MAIN_MENU;
 										break;
@@ -407,6 +418,7 @@ int main_thread(SceSize args, void *argp) {
 										}
 										break;
 									case 1:
+										blit_clearscreen();
 										search_id++;
 										if (search_id > 3) search_id = 0;
 										search_idx = (search_type[search_id]<<1)-1;
