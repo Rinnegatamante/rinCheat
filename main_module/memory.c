@@ -26,15 +26,46 @@
 int results_num = -2;
 int ram_mode = 0;
 
+// Use this only to get disassembly with crashes on vita-parse-core since it's not ARM-optimized
+int memcmp_debug(void* mem1, void* mem2, uint8_t size){
+	if (mem1 == NULL || mem2 == NULL) return -1;
+	uint8_t byte1, byte1_2;
+	uint16_t byte2, byte2_2;
+	uint32_t byte4, byte4_2;
+	uint64_t byte8, byte8_2;
+	switch (size){
+		case 1:
+			byte1 = ((uint8_t*)mem1)[0];
+			byte1_2 = ((uint8_t*)mem2)[0];
+			return (byte1 == byte1_2) ? 0 : -1;
+			break;
+		case 2:
+			byte2 = ((uint16_t*)mem1)[0];
+			byte2_2 = ((uint16_t*)mem2)[0];
+			return (byte2 == byte2_2) ? 0 : -1;
+			break;
+		case 4:
+			byte4 = ((uint32_t*)mem1)[0];
+			byte4_2 = ((uint32_t*)mem2)[0];
+			return (byte4 == byte4_2) ? 0 : -1;
+			break;
+		case 8:
+			byte8 = ((uint64_t*)mem1)[0];
+			byte8_2 = ((uint64_t*)mem2)[0];
+			return (byte8 == byte8_2) ? 0 : -1;
+			break;			
+	};
+}
+
 // Generic memory scanner (MMC storage)
 void scanMemory(uint32_t* cur_matches, void* mem, uint32_t mem_size, uint64_t val, int val_size){
 	int results_fd  = sceIoOpen("ux0:/data/rinCheat/rinCheat_temp.bin", SCE_O_WRONLY | SCE_O_CREAT, 0777);
 	sceIoLseek(results_fd, 0, SEEK_END);
-	int i = 0;
+	uint32_t i = 0;
 	uint8_t* p = (uint8_t*)mem;
 	uint32_t matches = cur_matches[0];
-	while (i < mem_size){
-		if (memcmp(&p[i], &val, val_size) == 0){
+	while (i < mem_size-val_size){
+		if (memcmp/*_debug*/(&p[i], &val, val_size) == 0){
 			uint32_t to_write = (uint32_t)&p[i];
 			sceIoWrite(results_fd, &to_write, 4);
 			matches++;
