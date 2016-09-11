@@ -49,7 +49,6 @@ int dummy_thread(SceSize args, void *argp){
 }
 void pauseMainThread(){
 	sceKernelChangeThreadPriority(0, 0x0);
-	if (net_thread != 0) sceKernelChangeThreadPriority(net_thread, 0x0);
 	int i;
 	term_stubs = 0;
 	for (i=0;i<((net_thread != 0) ? 1 : 2);i++){

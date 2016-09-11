@@ -351,6 +351,7 @@ int main_thread(SceSize args, void *argp) {
 										while(freq_list[i] != freq){i++;}
 										if (freq < 444) scePowerSetArmClockFrequency(freq_list[i+1]);
 										else scePowerSetArmClockFrequency(111);
+										if (freq == scePowerGetArmClockFrequency()) scePowerSetArmClockFrequency(111);
 										break;
 									case 1:
 										i = 0;
@@ -358,6 +359,7 @@ int main_thread(SceSize args, void *argp) {
 										while(freq_list[i] != freq){i++;}
 										if (freq < 222) scePowerSetBusClockFrequency(freq_list[i+1]);
 										else scePowerSetBusClockFrequency(111);
+										if (freq == scePowerGetBusClockFrequency()) scePowerSetBusClockFrequency(111);
 										break;
 									case 2:
 										i = 0;
@@ -365,6 +367,7 @@ int main_thread(SceSize args, void *argp) {
 										while(freq_list[i] != freq){i++;}
 										if (freq < 222) scePowerSetGpuClockFrequency(freq_list[i+1]);
 										else scePowerSetGpuClockFrequency(111);
+										if (freq == scePowerGetGpuClockFrequency()) scePowerSetGpuClockFrequency(111);
 										break;
 									case 3:
 										blit_clearscreen();

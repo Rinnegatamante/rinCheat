@@ -77,10 +77,15 @@ int main_thread(SceSize args, void *argp) {
 	for (;;){
 		sceCtrlPeekBufferPositive(0, &pad, 1);
 		if (!paused){
-			if ((pad.buttons & SCE_CTRL_SELECT) && (pad.buttons & SCE_CTRL_START)) paused = 1;
-			else sceKernelDelayThread(1000); // Just let VITA scheduler do its work
+			if ((pad.buttons & SCE_CTRL_SELECT) && (pad.buttons & SCE_CTRL_START)){
+				paused = 1;
+				sceKernelChangeThreadPriority(0, 0x0);	
+			}else sceKernelDelayThread(1000); // Just let VITA scheduler do its work
 		}else{
-			if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))) paused = 0;
+			if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))){
+				paused = 0;
+				sceKernelChangeThreadPriority(0, 0x40);
+			}
 		}
 		switch (request){
 			case FTP_SWITCH:
