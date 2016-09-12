@@ -16,6 +16,8 @@
  *
  */
 
+SceUID main_thread_thid; // Main thread thid
+ 
 void pauseMainThread();
 void resumeMainThread();
 int searchThreadByName(char* name);

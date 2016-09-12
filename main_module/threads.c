@@ -18,6 +18,7 @@
 #include <string.h>
 #include <psp2/types.h>
 #include <psp2/kernel/threadmgr.h>
+#include "threads.h"
 
 #define THREADS_RANGE 0x1000 // How many thread to scan starting from main thread
 
@@ -28,12 +29,12 @@ int searchThreadByName(char* name){
 	SceKernelThreadInfo status;
 	status.size = sizeof(SceKernelThreadInfo);
 	while (i <= THREADS_RANGE){
-		int ret = sceKernelGetThreadInfo(0x40010003 + i, &status);
+		int ret = sceKernelGetThreadInfo(main_thread_thid + i, &status);
 		if (ret >= 0 && strcmp(status.name, name) == 0) break;
 		i++;
 	}
 	if (i > THREADS_RANGE) return 0; // Not found
-	return 0x40010003 + i;
+	return main_thread_thid + i;
 }
 
 /*
@@ -56,12 +57,12 @@ void pauseMainThread(){
 		if (thid >= 0)
 			sceKernelStartThread(thid, 0, NULL);
 	}
-	SceKernelThreadInfo main_thread;
+	SceKernelThreadInfo main_thread_info;
 	for(;;){
-		main_thread.size = sizeof(SceKernelThreadInfo);
-		sceKernelGetThreadInfo(0x40010003, &main_thread);
-		sceKernelChangeThreadPriority(0x40010003, 0x7F);
-		if (main_thread.status == SCE_THREAD_RUNNING){
+		main_thread_info.size = sizeof(SceKernelThreadInfo);
+		sceKernelGetThreadInfo(main_thread_thid, &main_thread_info);
+		sceKernelChangeThreadPriority(main_thread_thid, 0x7F);
+		if (main_thread_info.status == SCE_THREAD_RUNNING){
 			sceKernelDelayThread(1000); // Rescheduling until main thread is in WAITING status
 		}else break;
 	}
@@ -69,8 +70,8 @@ void pauseMainThread(){
 void resumeMainThread(){
 	term_stubs = 1;
 	sceKernelChangeThreadPriority(0, 0x40);
-	SceKernelThreadInfo main_thread;
-	main_thread.size = sizeof(SceKernelThreadInfo);
-	sceKernelGetThreadInfo(0x40010003, &main_thread);
-	sceKernelChangeThreadPriority(0x40010003, main_thread.initPriority);
+	SceKernelThreadInfo main_thread_info;
+	main_thread_info.size = sizeof(SceKernelThreadInfo);
+	sceKernelGetThreadInfo(main_thread_thid, &main_thread_info);
+	sceKernelChangeThreadPriority(main_thread_thid, main_thread_info.initPriority);
 }

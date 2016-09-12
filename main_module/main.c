@@ -117,8 +117,14 @@ int main_thread(SceSize args, void *argp) {
 	// Attaching game main thread
 	SceKernelThreadInfo status;
 	status.size = sizeof(SceKernelThreadInfo);
-	ret = sceKernelGetThreadInfo(0x40010003, &status);
-	if (ret < 0) sceKernelGetThreadInfo(0x40010005, &status); // Oreshika apparently uses this thid
+	main_thread_thid = 0x40010003;
+	ret = sceKernelGetThreadInfo(main_thread_thid, &status);
+	
+	// Oreshika apparently uses this thid, maybe even other games uses it?
+	if (ret < 0){
+		main_thread_thid = 0x40010005;
+		sceKernelGetThreadInfo(main_thread_thid, &status);
+	}
 	
 	// Check if we'll use RAM or MMC storage
 	SceCtrlData pad, oldpad;
