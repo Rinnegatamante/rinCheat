@@ -1,0 +1,8 @@
+#God mode
+@0x82A37850 @0x01 @1
+#No clipping (walk through walls)
+@0x82A37857 @0x01 @1
+#Throw cash with use button
+@0x82A37852 @0x01 @1
+#Disable graphics filtering
+@0x81506BD8 @0x00 @1
