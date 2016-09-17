@@ -1,5 +1,5 @@
-#ifndef __BLIT_H__
-#define __BLIT_H__
+#ifndef _BLIT_H_
+#define _BLIT_H_
 
 #define COLOR_CYAN    0x00ffff00
 #define COLOR_MAGENDA 0x00ff00ff

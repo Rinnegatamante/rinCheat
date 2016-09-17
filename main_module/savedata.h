@@ -16,5 +16,10 @@
  *
  */
 
+#ifndef _SAVEDATA_H_
+#define _SAVEDATA_H_
+
 void dumpSavedataDir(char* folder, char* target);
 void restoreSavedataDir(char* folder, char* target);
+
+#endif

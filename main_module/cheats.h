@@ -16,6 +16,9 @@
  *
  */
 
+#ifndef _CHEATS_H_
+#define _CHEATS_H_
+
 typedef struct cheatDB{
 	char name[128];
 	uint32_t offset;
@@ -28,3 +31,5 @@ typedef struct cheatDB{
 extern int numCheats;
 
 cheatDB* loadCheatsDatabase(char* db_file, cheatDB* db);
+
+#endif

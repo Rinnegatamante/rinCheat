@@ -16,6 +16,9 @@
  *
  */
 
+#ifndef _MEMORY_H_
+#define _MEMORY_H_
+
 extern int results_num;
 extern int ram_mode;
 
@@ -27,3 +30,5 @@ void injectValue(uint8_t* offset, uint64_t val, int val_size);
 void injectStackFile(void* stack_ptr, int stack_size, char* file);
 void injectMemory(uint64_t val, int val_size);
 void saveOffsets(char* filename);
+
+#endif

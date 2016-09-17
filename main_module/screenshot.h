@@ -16,4 +16,9 @@
  *
  */
 
+#ifndef _SCREENSHOT_H_
+#define _SCREENSHOT_H_
+ 
 void takeScreenshot(char* titleid);
+
+#endif
