@@ -22,6 +22,7 @@
 extern int results_num;
 extern int ram_mode;
 
+int checkHeap();
 void scanMemory(uint32_t* cur_matches, void* mem, uint32_t mem_size, uint64_t val, int val_size);
 int scanStack(void* stack_ptr, uint32_t stack_size, uint64_t val, int val_size);
 int scanHeap(uint64_t val, int val_size);

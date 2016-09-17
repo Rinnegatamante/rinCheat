@@ -57,6 +57,16 @@ int memcmp_debug(void* mem1, void* mem2, uint8_t size){
 	};
 }
 
+// Heap availability check
+int checkHeap(){
+	uint8_t* dummy = (uint8_t*)malloc(1);
+	if (dummy != NULL){
+		free(dummy);
+		return 0;
+	}
+	return -1;
+}
+
 // Generic memory scanner (MMC storage)
 void scanMemory(uint32_t* cur_matches, void* mem, uint32_t mem_size, uint64_t val, int val_size){
 	int results_fd  = sceIoOpen("ux0:/data/rinCheat/rinCheat_temp.bin", SCE_O_WRONLY | SCE_O_CREAT, 0777);

@@ -148,12 +148,7 @@ int main_thread(SceSize args, void *argp) {
 	}
 	
 	// Check if Heap Scanner is usable
-	uint8_t heap_scanner = 0;
-	uint8_t* dummy = (uint8_t*)malloc(1);
-	if (dummy != NULL){
-		heap_scanner = 1;
-		free(dummy);
-	}
+	int heap_scanner = checkHeap();
 	
 	// Getting title info
 	char titleid[16], title[256];
@@ -308,7 +303,7 @@ int main_thread(SceSize args, void *argp) {
 							blit_set_color(RED);
 							blit_stringf(5, 225, "NET MODULE: exited");
 						}
-						if (heap_scanner != 0){
+						if (heap_scanner != -1){
 							blit_set_color(GREEN);
 							blit_stringf(5, 245, "HEAP SCANNER: ready");
 						}else{
@@ -668,7 +663,7 @@ int main_thread(SceSize args, void *argp) {
 				
 					blit_stringf(5, 35, "Scanning memory, please wait");
 					results_num = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
-					if (heap_scanner) results_num += scanHeap(dval, search_type[search_id]);
+					if (heap_scanner == 0) results_num += scanHeap(dval, search_type[search_id]);
 					int_state = MENU;
 					break;
 					
@@ -704,6 +699,7 @@ int main_thread(SceSize args, void *argp) {
 				menu_state = MAIN_MENU;
 				menu_idx = 0;
 				blit_clearscreen();
+				heap_scanner = checkHeap();
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
 		oldpad = pad;
