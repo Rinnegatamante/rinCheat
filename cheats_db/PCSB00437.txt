@@ -6,3 +6,7 @@
 @0x82A37852 @0x01 @1
 #Disable graphics filtering
 @0x81506BD8 @0x00 @1
+#Disable graphics filtering (magnify)
+@0x81506BB8 @0x00002600 @4
+#Disable graphics filtering (minify)
+@0x81506BB4 @0x00002600 @4

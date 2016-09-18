@@ -1,2 +1,40 @@
-#Money
+#99999999 Money
 @0x8406F490 @0x05F5E0FF @4
+#x99 Usable Item Slot 1
+@0x83F51934 @0x63 @1
+#x99 Usable Item Slot 2
+@0x83F51954 @0x63 @1
+#x99 Usable Item Slot 3
+@0x83F51974 @0x63 @1
+#x99 Usable Item Slot 4
+@0x83F51994 @0x63 @1
+#x99 Usable Item Slot 5
+@0x83F519B4 @0x63 @1
+#x99 Usable Item Slot 6
+@0x83F519D4 @0x63 @1
+#x99 Usable Item Slot 7
+@0x83F519F4 @0x63 @1
+#x99 Usable Item Slot 8
+@0x83F51A14 @0x63 @1
+#x99 Usable Item Slot 9
+@0x83F51A34 @0x63 @1
+#x99 Usable Item Slot 10
+@0x83F51A54 @0x63 @1
+#x99 Usable Item Slot 11
+@0x83F51A74 @0x63 @1
+#x99 Usable Item Slot 12
+@0x83F51A94 @0x63 @1
+#x99 Usable Item Slot 13
+@0x83F51AB4 @0x63 @1
+#x99 Usable Item Slot 14
+@0x83F51AD4 @0x63 @1
+#x99 Usable Item Slot 15
+@0x83F51AF4 @0x63 @1
+#x99 Usable Item Slot 16
+@0x83F51B14 @0x63 @1
+#x99 Usable Item Slot 17
+@0x83F51B34 @0x63 @1
+#x99 Usable Item Slot 18
+@0x83F51B54 @0x63 @1
+#x99 Usable Item Slot 19
+@0x83F51B74 @0x63 @1
