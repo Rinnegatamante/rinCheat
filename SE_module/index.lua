@@ -106,8 +106,8 @@ while true do
 			if svdt_idx < 1 then
 				svdt_idx = #savedatas
 			end
-			if svdt_idx > 26 then
-				st_draw = svdt_idx - 25
+			if svdt_idx > 25 then
+				st_draw = svdt_idx - 24
 			else
 				st_draw = 1
 			end
@@ -116,8 +116,8 @@ while true do
 			if svdt_idx > #savedatas then
 				svdt_idx = 1
 			end
-			if svdt_idx > 26 then
-				st_draw = svdt_idx - 25
+			if svdt_idx > 25 then
+				st_draw = svdt_idx - 24
 			else
 				st_draw = 1
 			end
@@ -136,18 +136,18 @@ while true do
 			if cht_idx < 1 then
 				cht_idx = #cur_chts
 			end
-			if cht_idx > 26 then
-				st_draw = cht_idx - 25
+			if cht_idx > 25 then
+				st_draw = cht_idx - 24
 			else
 				st_draw = 1
 			end
 		elseif Controls.check(pad, SCE_CTRL_DOWN) and not Controls.check(oldpad, SCE_CTRL_DOWN) then
 			cht_idx = cht_idx + 1
 			if cht_idx > #cur_chts then
-				svdt_idx = 1
+				cht_idx = 1
 			end
-			if cht_idx > 26 then
-				st_draw = cht_idx - 25
+			if cht_idx > 25 then
+				st_draw = cht_idx - 24
 			else
 				st_draw = 1
 			end
