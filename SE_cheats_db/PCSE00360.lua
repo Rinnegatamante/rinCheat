@@ -2,5 +2,5 @@
 -- Credits: Kaz721
 
 cur_chts = {
-    {["name"]="max money", ["offset"]=0x00B18, ["file"]="data0000_0.bin", ["value"]=0x98967F, ["size"]=8}
+    {["name"]="Max Money", ["offset"]=0x00B18, ["file"]="data0000_0.bin", ["value"]=0x98967F, ["size"]=8}
 }
