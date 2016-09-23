@@ -40,7 +40,7 @@
 
 // Menu states
 enum{
-	MAIN_MENU,
+	MAIN_MENU = 0,
 	CHEATS_MENU,
 	HACKS_MENU,
 	SEARCH_MENU,
@@ -49,7 +49,7 @@ enum{
 
 // Internal states
 enum{
-	MENU,
+	MENU = 0,
 	STACK_DUMP,
 	DO_ABS_SEARCH,
 	INJECT_MEMORY,
@@ -66,7 +66,7 @@ enum{
 
 // Requests type for net module
 enum{
-	NONE,
+	NONE = 0,
 	FTP_SWITCH,
 	STREAM_SWITCH
 };
@@ -77,9 +77,12 @@ enum{
 #define RED 0x000000ff
 #define GREEN 0x0000ff00
 
+extern int pheight;
+extern int pwidth;
 static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
 static int search_type[] = {1, 2, 4, 8};
 int net_thread = 0;
+uint8_t* net_request = NULL;
 
 int main_thread(SceSize args, void *argp) {
 	
@@ -98,6 +101,7 @@ int main_thread(SceSize args, void *argp) {
 	int screenshot = 0;
 	int auto_suspend = 1;
 	int tmp, size;
+	int heap_scanner;
 	int search_id = 2;
 	char search_val[] = "0000000000000000";
 	int search_idx = 7;
@@ -105,30 +109,19 @@ int main_thread(SceSize args, void *argp) {
 	char vita_ip[32];
 	uint64_t dval = 0;
 	
-	// Loading net module
-	uint32_t addr = 0;
-	uint8_t* net_request = NULL;
-	int ret = sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
-	if (ret >= 0){
-		sceKernelDelayThread(5 * 1000 * 1000); // Wait till net module did its stuffs
-		
-		// Check if the net thread is still opened or it exited cause errors
-		net_thread = searchThreadByName("rinCheat_net");
-		if (net_thread != 0){
-		
-			int tmp = sceIoOpen("ux0:/data/rinCheat/addr.bin", SCE_O_RDONLY|SCE_O_CREAT, 0777);
-			sceIoRead(tmp, &addr, 4);
-			sceIoClose(tmp);
-			net_request = (uint8_t*)addr; // Address of the volatile variable used by net module to check requests
+	// Patch for games that use resolution different from native one (Like Minecraft)
+	int hmax = pheight - 84;
 	
-		}
-	}
+	// Loading net module
+	SceCtrlData pad, oldpad;
+	sceCtrlPeekBufferPositive(0, &oldpad, 1);
+	if (!(oldpad.buttons & SCE_CTRL_RTRIGGER)) sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
 	
 	// Attaching game main thread
 	SceKernelThreadInfo status;
 	status.size = sizeof(SceKernelThreadInfo);
 	main_thread_thid = 0x40010003;
-	ret = sceKernelGetThreadInfo(main_thread_thid, &status);
+	int ret = sceKernelGetThreadInfo(main_thread_thid, &status);
 	
 	// Oreshika apparently uses this thid, maybe even other games uses it?
 	if (ret < 0){
@@ -137,8 +130,6 @@ int main_thread(SceSize args, void *argp) {
 	}
 	
 	// Check if we'll use RAM or MMC storage
-	SceCtrlData pad, oldpad;
-	sceCtrlPeekBufferPositive(0, &oldpad, 1);
 	if (!(oldpad.buttons & SCE_CTRL_LTRIGGER)){
 		uint8_t* test = malloc(status.stackSize);
 		if (test != NULL){
@@ -146,9 +137,6 @@ int main_thread(SceSize args, void *argp) {
 			free(test);
 		}
 	}
-	
-	// Check if Heap Scanner is usable
-	int heap_scanner = checkHeap();
 	
 	// Getting title info
 	char titleid[16], title[256];
@@ -243,7 +231,7 @@ int main_thread(SceSize args, void *argp) {
 										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], ftp ? "On - Listening on " : "Off", ftp ? vita_ip : "");
 										break;
 									case 5:
-										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], ftp ? "On - Listening on " : "Off", pc_stream ? vita_ip : "");
+										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], pc_stream ? "On - Listening on " : "Off", pc_stream ? vita_ip : "");
 										break;
 									default:
 										blit_stringf(5, y, opt[menu_state][m_idx]);
@@ -271,7 +259,7 @@ int main_thread(SceSize args, void *argp) {
 						}
 					}else{ // Dynamic menus
 						cur = db;
-						while (y <= 460 && cur != NULL){
+						while (y <= hmax && cur != NULL){
 							if (m_idx >= menu_idx){
 								uint32_t clr = WHITE;
 								if (m_idx == menu_idx){
@@ -565,10 +553,10 @@ int main_thread(SceSize args, void *argp) {
 						}
 					}
 					
-					blit_stringf(5, 480, "Target info: ");
-					blit_stringf(5, 500, "Title: %s", title);
-					blit_stringf(5, 520, "TitleID: %s", titleid);
-					blit_stringf(830, 520, ram_mode ? "RAM Mode" : "MMC Mode");
+					blit_stringf(5, hmax-64, "Target info: ");
+					blit_stringf(5, hmax-44, "Title: %s", title);
+					blit_stringf(5, hmax-24, "TitleID: %s", titleid);
+					blit_stringf(pwidth-130, hmax-24, ram_mode ? "RAM Mode" : "MMC Mode");
 					if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))){
 						started = 0;
 						resumeMainThread();
@@ -700,6 +688,7 @@ int main_thread(SceSize args, void *argp) {
 				menu_idx = 0;
 				blit_clearscreen();
 				heap_scanner = checkHeap();
+				net_thread = checkNetModule();
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
 		oldpad = pad;
