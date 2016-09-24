@@ -38,3 +38,5 @@
 @0x83F51B54 @0x63 @1
 #x99 Usable Item Slot 19
 @0x83F51B74 @0x63 @1
+#Brave Point A in Slot 1 (Auto Corrects)
+@0x83F5192C @0x36 @1
