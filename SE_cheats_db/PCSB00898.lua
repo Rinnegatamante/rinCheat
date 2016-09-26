@@ -1,6 +1,8 @@
 -- Attack on Titan: Wings of Liberty (EUR)
 -- Credits: Wakamu
 
+needs_crc32 = false
+
 cur_chts = {
 	{["name"]="9999999 Money ", ["offset"]=0x34, ["file"]="app000.dat", ["value"]=0x7F969800, ["size"]=4},
 	{["name"]="x999 Item 1 ", ["offset"]=0x35CA0, ["file"]="app000.dat", ["value"]=0xE7030000, ["size"]=4},

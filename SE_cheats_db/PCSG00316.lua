@@ -1,6 +1,8 @@
 -- Eiyuu Senki (JPN)
 -- Credits: Ecner19
 
+needs_crc32 = false
+
 cur_chts = {
 	{["name"]="Max Gold", ["offset"]=0x56F0, ["file"]="PLAY0001.DAT", ["value"]=0x5F5E0FF, ["size"]=4},
 	{["name"]="MC 30000 HP", ["offset"]=0xBF0D, ["file"]="PLAY0001.DAT", ["value"]=0x7530, ["size"]=2},

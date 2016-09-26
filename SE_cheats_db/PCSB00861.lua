@@ -1,6 +1,8 @@
 -- Digimon Cyber Sleuth (EUR)
 -- Credits: Kaz721, Udaius
 
+needs_crc32 = false
+
 cur_chts = {
 	{["name"]="Max Yen", ["offset"]=0x3EB58, ["file"]="0000.bin", ["value"]=0x98967F, ["size"]=8},
 	{["name"]="x99 Item Slot 1", ["offset"]=0x34A44, ["file"]="0000.bin",["value"]=0x63, ["size"]=1},

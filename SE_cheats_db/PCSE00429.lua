@@ -1,6 +1,8 @@
 -- Tales of Hearts R (USA)
 -- Credits: Red7s
 
+needs_crc32 = false
+
 cur_chts = {
 	{["name"]="Max Grade", ["offset"]=0x6160, ["file"]="TOH_DATA0000.bin", ["value"]=0x1869F, ["size"]=4},	
 	{["name"]="x99999 Gald", ["offset"]=0x615C, ["file"]="TOH_DATA0000.bin", ["value"]=0x1869F, ["size"]=4},
