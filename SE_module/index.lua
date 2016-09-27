@@ -78,14 +78,14 @@ function updateDatabase()
 			offs1, offs2 = string.find(raw_data, "Length: ")
 			offs3 = string.find(raw_data, "\r", offs2)
 			stub, data_offs = string.find(raw_data, "\r\n\r\n")
-			if data_offs ~= nil then
+			if data_offs ~= nil and offs2 ~= nil then
 				received_size = string.len(raw_data) - data_offs
+				data_size = math.tointeger(tonumber(string.sub(raw_data, offs2, offs3)))
+				txt = "Downloading database updates (" .. formatSize(received_size) .. " / " .. formatSize(data_size) .. ")"
+				percent = received_size / data_size
 				state = 3
 			end
-			data_size = math.tointeger(tonumber(string.sub(raw_data, offs2, offs3)))
-			txt = "Downloading database updates (" .. formatSize(received_size) .. " / " .. formatSize(data_size) .. ")"
-			raw_data = raw_data .. Socket.receive(skt, 8192)
-			percent = received_size / data_size
+			raw_data = raw_data .. Socket.receive(skt, 8192)	
 		elseif state == 3 then -- Download phase
 			raw_data = raw_data .. Socket.receive(skt, 8192)
 			received_size = string.len(raw_data) - data_offs
@@ -130,6 +130,7 @@ end
 
 -- Get GIT version
 function getRemoteVersion()
+	local timeout = Timer.new()
 	local state = 0
 	local raw_data = ""
 	local data_size = 0
@@ -153,9 +154,14 @@ function getRemoteVersion()
 			stub, data_offs = string.find(raw_data, "\r\n\r\n")
 			if data_offs ~= nil and offs2 ~= nil then
 				received_size = string.len(raw_data) - data_offs
+				data_size = math.tointeger(tonumber(string.sub(raw_data, offs2, offs3)))	
 				state = 3
+			else
+				if Timer.getTime(timeout) > 3000 then
+					Timer.destroy(timeout)
+					return false
+				end
 			end
-			data_size = math.tointeger(tonumber(string.sub(raw_data, offs2, offs3)))			
 		elseif state == 3 then -- Download phase
 			raw_data = raw_data .. Socket.receive(skt, 8192)
 			received_size = string.len(raw_data) - data_offs		
