@@ -21,7 +21,8 @@
 #include <string.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
-#include "cheats.h"
+#include <psp2/power.h>
+#include "filesystem.h"
 
 int numCheats = 0;
 
@@ -74,4 +75,35 @@ cheatDB* loadCheatsDatabase(char* db_file, cheatDB* db){
 	}
 	sceIoClose(fd);
 	return db;
+}
+
+int loadTitleSettings(char* titleid, settings* cfg){
+	char tmp[256];
+	sprintf(tmp,"ux0:/data/rinCheat/settings/%s.txt", titleid);
+	int fd = sceIoOpen(tmp, SCE_O_RDONLY, 0777);
+	if (fd < 0){ // No saved settings file
+		cfg->cpu_clock = scePowerGetArmClockFrequency();
+		cfg->gpu_clock = scePowerGetGpuClockFrequency();
+		cfg->bus_clock = scePowerGetBusClockFrequency();
+		cfg->gpu_xbar_clock = scePowerGetGpuXbarClockFrequency();
+		cfg->suspend = 1;
+		cfg->net = 1;
+		cfg->screenshot = 0;
+		return -1;
+	}else{
+		sceIoRead(fd, tmp, 256);
+		sscanf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu",&cfg->cpu_clock,&cfg->gpu_clock,&cfg->bus_clock,&cfg->gpu_xbar_clock,&cfg->suspend,&cfg->net,&cfg->screenshot);
+		sceIoClose(fd);
+		return 0;
+	}
+}
+
+void saveTitleSettings(char* titleid, settings* cfg){
+	char tmp[256];
+	sprintf(tmp, "ux0:/data/rinCheat/settings/%s.txt", titleid);
+	sceIoRemove(tmp);
+	int fd = sceIoOpen(tmp, SCE_O_WRONLY | SCE_O_CREAT, 0777);
+	sprintf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu",cfg->cpu_clock,cfg->gpu_clock,cfg->bus_clock,cfg->gpu_xbar_clock,cfg->suspend,cfg->net,cfg->screenshot);
+	sceIoWrite(fd, tmp, strlen(tmp));
+	sceIoClose(fd);
 }

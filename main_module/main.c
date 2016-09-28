@@ -35,7 +35,7 @@
 #include "memory.h"
 #include "threads.h"
 #include "savedata.h"
-#include "cheats.h"
+#include "filesystem.h"
 #include "screenshot.h"
 
 // Menu states
@@ -90,6 +90,7 @@ int main_thread(SceSize args, void *argp) {
 	sceIoMkdir("ux0:/data/rinCheat", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/db", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/screenshots", 0777);
+	sceIoMkdir("ux0:/data/rinCheat/settings", 0777);
 	int started = 0;
 	int ftp = 0;
 	int pc_stream = 0;
@@ -98,8 +99,6 @@ int main_thread(SceSize args, void *argp) {
 	int old_int_state = int_state;
 	int old_menu_state = menu_state;
 	int menu_idx = 0;
-	int screenshot = 0;
-	int auto_suspend = 1;
 	int tmp, size;
 	int heap_scanner;
 	int search_id = 2;
@@ -109,13 +108,28 @@ int main_thread(SceSize args, void *argp) {
 	char vita_ip[32];
 	uint64_t dval = 0;
 	
+	// Getting title info
+	char titleid[16], title[256];
+	sceAppMgrAppParamGetString(0, 9, title , 256);
+	sceAppMgrAppParamGetString(0, 12, titleid , 256);
+	
+	// Loading default settings file if it exists
+	settings cfg;
+	if (loadTitleSettings(titleid, &cfg) == 0){
+		scePowerSetArmClockFrequency(cfg.cpu_clock);
+		scePowerSetGpuClockFrequency(cfg.gpu_clock);
+		scePowerSetBusClockFrequency(cfg.bus_clock);
+		scePowerSetGpuXbarClockFrequency(cfg.gpu_xbar_clock);
+	}
+	
 	// Patch for games that use resolution different from native one (Like Minecraft)
+	 blit_setup();
 	int hmax = pheight - 84;
 	
 	// Loading net module
 	SceCtrlData pad, oldpad;
 	sceCtrlPeekBufferPositive(0, &oldpad, 1);
-	if (!(oldpad.buttons & SCE_CTRL_RTRIGGER)) sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
+	if ((!(oldpad.buttons & SCE_CTRL_RTRIGGER)) && cfg.net) sceKernelLoadStartModule("ux0:/data/rinCheat/net_module.suprx", 0, NULL, 0, NULL, NULL);
 	
 	// Attaching game main thread
 	SceKernelThreadInfo status;
@@ -138,11 +152,6 @@ int main_thread(SceSize args, void *argp) {
 		}
 	}
 	
-	// Getting title info
-	char titleid[16], title[256];
-	sceAppMgrAppParamGetString(0, 9, title , 256);
-	sceAppMgrAppParamGetString(0, 12, titleid , 256);
-	
 	// Opening db file for target game
 	cheatDB* db = NULL;
 	cheatDB* cur = NULL;
@@ -164,12 +173,12 @@ int main_thread(SceSize args, void *argp) {
 	for (;;){
 		
 		// Auto Suspend Hack
-		if (!auto_suspend) sceKernelPowerTick(1);
+		if (!cfg.suspend) sceKernelPowerTick(1);
 		
 		sceCtrlPeekBufferPositive(0, &pad, 1);
 		
 		// Screenshot feature
-		if (screenshot){
+		if (cfg.screenshot){
 			if ((pad.buttons & SCE_CTRL_START) && (pad.buttons & SCE_CTRL_LTRIGGER) && (pad.buttons & SCE_CTRL_RTRIGGER)){
 				if (!started) pauseMainThread();
 				takeScreenshot(titleid);
@@ -216,10 +225,10 @@ int main_thread(SceSize args, void *argp) {
 										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuXbarClockFrequency());
 										break;
 									case 4:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], auto_suspend ? "On" : "Off");
+										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], cfg.suspend ? "On" : "Off");
 										break;
 									case 5:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], screenshot ? "On" : "Off");
+										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], cfg.screenshot ? "On" : "Off");
 										break;
 									default:
 										blit_stringf(5, y, opt[menu_state][m_idx]);
@@ -361,6 +370,7 @@ int main_thread(SceSize args, void *argp) {
 										if (freq < 444) scePowerSetArmClockFrequency(freq_list[i+1]);
 										else scePowerSetArmClockFrequency(111);
 										if (freq == scePowerGetArmClockFrequency()) scePowerSetArmClockFrequency(111);
+										cfg.cpu_clock = scePowerGetArmClockFrequency();
 										break;
 									case 1:
 										i = 0;
@@ -369,6 +379,7 @@ int main_thread(SceSize args, void *argp) {
 										if (freq < 222) scePowerSetBusClockFrequency(freq_list[i+1]);
 										else scePowerSetBusClockFrequency(111);
 										if (freq == scePowerGetBusClockFrequency()) scePowerSetBusClockFrequency(111);
+										cfg.bus_clock = scePowerGetArmClockFrequency();
 										break;
 									case 2:
 										i = 0;
@@ -377,6 +388,7 @@ int main_thread(SceSize args, void *argp) {
 										if (freq < 222) scePowerSetGpuClockFrequency(freq_list[i+1]);
 										else scePowerSetGpuClockFrequency(111);
 										if (freq == scePowerGetGpuClockFrequency()) scePowerSetGpuClockFrequency(111);
+										cfg.gpu_clock = scePowerGetArmClockFrequency();
 										break;
 									case 3:
 										i = 0;
@@ -385,14 +397,15 @@ int main_thread(SceSize args, void *argp) {
 										if (freq < 222) scePowerSetGpuXbarClockFrequency(freq_list[i+1]);
 										else scePowerSetGpuXbarClockFrequency(111);
 										if (freq == scePowerGetGpuXbarClockFrequency()) scePowerSetGpuXbarClockFrequency(111);
+										cfg.gpu_xbar_clock = scePowerGetGpuXbarClockFrequency();
 										break;
 									case 4:
 										blit_clearscreen();
-										auto_suspend = !auto_suspend;
+										cfg.suspend = !cfg.suspend;
 										break;
 									case 5:
 										blit_clearscreen();
-										screenshot = !screenshot;
+										cfg.screenshot = !cfg.screenshot;
 										break;
 									case 6:
 										menu_idx = 1;
@@ -559,6 +572,7 @@ int main_thread(SceSize args, void *argp) {
 					blit_stringf(pwidth-130, hmax-24, ram_mode ? "RAM Mode" : "MMC Mode");
 					if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))){
 						started = 0;
+						saveTitleSettings(titleid, &cfg);
 						resumeMainThread();
 					}
 					break;

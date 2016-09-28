@@ -1,5 +1,5 @@
 TARGET  = rinCheat
-OBJS    = main.o blit.o font.o memory.o threads.o savedata.o cheats.o screenshot.o
+OBJS    = main.o blit.o font.o memory.o threads.o savedata.o filesystem.o screenshot.o
 
 LIBS    = -lSceAppUtil_stub -lSceAppMgr_stub -lSceCtrl_stub -lSceDisplay_stub -lSceFios2_stub -lSceKernel_stub -lScePower_stub -lSceLibc_stub
 
