@@ -163,7 +163,7 @@ int main_thread(SceSize args, void *argp) {
 	// Menus setup
 	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Cheats List"};
 	char* opt_main[] = {"Game Cheats","Game Hacks","Export decrypted savedata","Import decrypted savedata","FTP State: ","Stream Screen to PC: "};
-	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/stack.bin", "Inject stack from ux0:/stack.bin", "Return Main Menu"};
+	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/data/rinCheat/stack.bin", "Inject stack from ux0:/data/rinCheat/stack.bin", "Return Main Menu"};
 	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ", "GPU Crossbar Clock: ", "Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
 	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Save offsets","Return Cheats Menu"};
 	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search};
@@ -173,7 +173,7 @@ int main_thread(SceSize args, void *argp) {
 	for (;;){
 		
 		// Auto Suspend Hack
-		if (!cfg.suspend) sceKernelPowerTick(1);
+		if (!cfg.suspend) sceKernelPowerTick(0);
 		
 		sceCtrlPeekBufferPositive(0, &pad, 1);
 		
