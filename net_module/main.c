@@ -144,6 +144,7 @@ int stream_thread(SceSize args, void* argp){
 				sceNetSocketClose(stream_skt);
 				stream_skt = 0xDEADBEEF;
 				client_skt = 0;
+				jpeg_destroy_decompress( &cinfo);
 				sceKernelExitDeleteThread(0);
 			}
 		}
