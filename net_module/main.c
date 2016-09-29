@@ -15,7 +15,7 @@
  * Copyright (c) Rinnegatamante <rinnegatamante@gmail.com>
  *
  */
-
+unsigned int sceLibcHeapSize = 92 * 1024 * 1024;
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -27,8 +27,7 @@
 #include <psp2/net/netctl.h>
 #include <psp2/ctrl.h>
 #include <psp2/io/fcntl.h>
-#include <jpeglib.h>
-#include <setjmp.h>
+#include "encoder.h"
 #include "ftpvita.h"
 
 #define STREAM_PORT 5000 // Port used for screen streaming
@@ -41,27 +40,6 @@
 volatile uint8_t request = NONE;
 volatile uint8_t stream_state = 0;
 
-int _free_vita_newlib() {
-	return 0;
-}
-
-int _fini(){
-	return 0;
-}
-
-typedef struct jpegErrorManager {
-    struct jpeg_error_mgr pub;
-    jmp_buf setjmp_buffer;
-}jpegErrorManager;
-
-char jpegLastErrorMsg[JMSG_LENGTH_MAX];
-void jpegErrorExit (j_common_ptr cinfo)
-{
-    jpegErrorManager* myerr = (jpegErrorManager*) cinfo->err;
-   ( *(cinfo->err->format_message) ) (cinfo, jpegLastErrorMsg);
-    longjmp(myerr->setjmp_buffer, 1); 
-}
-
 /*	
  * REVIEW:
  * 1) Tons of games don't have enough free memory to let libjpeg encoder to work (in that cases, an error is sent to the client and can be read with Wireshark)
@@ -71,10 +49,9 @@ void jpegErrorExit (j_common_ptr cinfo)
 int stream_thread(SceSize args, void* argp){
 	int stream_skt = 0xDEADBEEF;
 	int client_skt = -1;
+	encoder jpeg_encoder;
 	for (;;){
 		if (stream_state){
-			struct jpeg_compress_struct cinfo;
-			JSAMPROW row_pointer[1];
 			if (stream_skt == 0xDEADBEEF){
 				stream_skt = sceNetSocket("Stream Socket", SCE_NET_AF_INET, SCE_NET_SOCK_STREAM, 0);
 				SceNetSockaddrIn addrTo;
@@ -83,12 +60,10 @@ int stream_thread(SceSize args, void* argp){
 				addrTo.sin_addr.s_addr = sceNetHtonl(SCE_NET_INADDR_ANY);
 				sceNetBind(stream_skt, (SceNetSockaddr*)&addrTo, sizeof(addrTo));
 				sceNetListen(stream_skt, 128);
-				jpegErrorManager jerr;
-				cinfo.err = jpeg_std_error(&jerr.pub);
-				if (setjmp(jerr.setjmp_buffer)) {
-					sceNetSend(client_skt, jpegLastErrorMsg, JMSG_LENGTH_MAX, 0);
-				}
-				jpeg_create_compress(&cinfo);
+				SceDisplayFrameBuf param;
+				param.size = sizeof(SceDisplayFrameBuf);
+				sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
+				encoderInit(param.width, param.height, param.pitch, &jpeg_encoder);
 			}
 			if (client_skt < 0){
 				SceNetSockaddrIn addrAccept;
@@ -107,34 +82,17 @@ int stream_thread(SceSize args, void* argp){
 				int bytes = 0;
 				char unused[256];
 				sceNetRecv(client_skt,unused,256,0);
-				unsigned char* mem = NULL;
-				unsigned long mem_size = 0;
+				int mem_size = 0;
 				SceDisplayFrameBuf param;
 				param.size = sizeof(SceDisplayFrameBuf);
 				sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
-				jpeg_mem_dest(&cinfo, &mem, &mem_size);
-				cinfo.image_width = param.pitch;
-				cinfo.image_height = param.height;
-				cinfo.input_components = 4;
-				cinfo.in_color_space = JCS_EXT_ABGR;
-				jpeg_set_defaults(&cinfo);
-				cinfo.num_components = 3;
-				cinfo.dct_method = JDCT_FASTEST;
-				jpeg_set_quality(&cinfo, 100, TRUE);
-				JSAMPLE* buffer = (JSAMPLE*)param.base;
-				jpeg_start_compress(&cinfo, TRUE);
-				int row_stride = cinfo.image_width * 3;
-				while( cinfo.next_scanline < cinfo.image_height ){
-					row_pointer[0] = &buffer[cinfo.next_scanline * row_stride];
-					jpeg_write_scanlines( &cinfo, row_pointer, 1 );
-				}
-				jpeg_finish_compress( &cinfo );
+				uint8_t* mem = encodeABGR(&jpeg_encoder, param.base, param.width, param.height, param.pitch, &mem_size);
 				char txt[32];
 				sprintf(txt, "%ld;", mem_size);
 				sceNetSend(client_skt, txt, 32, 0);
 				sceNetRecv(client_skt,unused,256,0);
 				while (bytes < mem_size){
-					sceNetSend(client_skt, &((uint8_t*)mem)[bytes], 4096, 0);
+					sceNetSend(client_skt, &((uint8_t*)mem)[bytes], bytes+4096 > mem_size ? mem_size - bytes : 4096, 0);
 					bytes += 4096;
 				}
 			}
@@ -144,7 +102,7 @@ int stream_thread(SceSize args, void* argp){
 				sceNetSocketClose(stream_skt);
 				stream_skt = 0xDEADBEEF;
 				client_skt = 0;
-				jpeg_destroy_decompress( &cinfo);
+				encoderTerm(&jpeg_encoder);
 				sceKernelExitDeleteThread(0);
 			}
 		}

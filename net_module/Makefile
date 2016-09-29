@@ -1,7 +1,7 @@
 TARGET  = net_module
-OBJS    = main.o ftpvita.o
+OBJS    = main.o ftpvita.o encoder.o
 
-LIBS    = -lSceDisplay_stub -lSceSysmodule_stub -lSceKernel_stub -lSceNet_stub -lSceNetCtl_stub -lSceCtrl_stub -lSceLibc_stub -ljpeg
+LIBS    = -lSceDisplay_stub -lSceSysmodule_stub -lSceKernel_stub -lSceNet_stub -lSceNetCtl_stub -lSceCtrl_stub -lSceLibc_stub -lSceJpegEnc_stub
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
