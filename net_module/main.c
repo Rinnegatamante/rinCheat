@@ -15,7 +15,6 @@
  * Copyright (c) Rinnegatamante <rinnegatamante@gmail.com>
  *
  */
-unsigned int sceLibcHeapSize = 92 * 1024 * 1024;
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -42,9 +41,8 @@ volatile uint8_t stream_state = 0;
 
 /*	
  * REVIEW:
- * 1) Tons of games don't have enough free memory to let libjpeg encoder to work (in that cases, an error is sent to the client and can be read with Wireshark)
+ * 1) Some games don't have enough vram available to init sceJpegEnc encoder
  * 2) Code uses TCP which is slow, should be ported to UDP
- * 3) Since libjpeg encoder seems to be unreliable on most games, maybe switching to another compression could be the right choice
  */
 int stream_thread(SceSize args, void* argp){
 	int stream_skt = 0xDEADBEEF;
