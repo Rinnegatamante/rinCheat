@@ -49,6 +49,19 @@ int _fini(){
 	return 0;
 }
 
+typedef struct jpegErrorManager {
+    struct jpeg_error_mgr pub;
+    jmp_buf setjmp_buffer;
+}jpegErrorManager;
+
+char jpegLastErrorMsg[JMSG_LENGTH_MAX];
+void jpegErrorExit (j_common_ptr cinfo)
+{
+    jpegErrorManager* myerr = (jpegErrorManager*) cinfo->err;
+   ( *(cinfo->err->format_message) ) (cinfo, jpegLastErrorMsg);
+    longjmp(myerr->setjmp_buffer, 1); 
+}
+
 /*	
  * REVIEW:
  * 1) Tons of games don't have enough free memory to let libjpeg encoder to work (in that cases, an error is sent to the client and can be read with Wireshark)
@@ -60,7 +73,6 @@ int stream_thread(SceSize args, void* argp){
 	int client_skt = -1;
 	for (;;){
 		if (stream_state){
-			struct jpeg_error_mgr jerr;
 			struct jpeg_compress_struct cinfo;
 			JSAMPROW row_pointer[1];
 			if (stream_skt == 0xDEADBEEF){
@@ -71,7 +83,11 @@ int stream_thread(SceSize args, void* argp){
 				addrTo.sin_addr.s_addr = sceNetHtonl(SCE_NET_INADDR_ANY);
 				sceNetBind(stream_skt, (SceNetSockaddr*)&addrTo, sizeof(addrTo));
 				sceNetListen(stream_skt, 128);
-				cinfo.err = jpeg_std_error(&jerr);
+				jpegErrorManager jerr;
+				cinfo.err = jpeg_std_error(&jerr.pub);
+				if (setjmp(jerr.setjmp_buffer)) {
+					sceNetSend(client_skt, jpegLastErrorMsg, JMSG_LENGTH_MAX, 0);
+				}
 				jpeg_create_compress(&cinfo);
 			}
 			if (client_skt < 0){
