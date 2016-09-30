@@ -44,7 +44,7 @@ int width, height, size;
 SDL_Surface* frame = NULL;
 char* buffer;
 GLint nofcolors = 3;
-GLenum texture_format=GL_BGR;
+GLenum texture_format=GL_RGB;
 GLuint texture=NULL;
 void updateFrame(){
 
