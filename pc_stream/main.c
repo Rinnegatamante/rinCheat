@@ -128,6 +128,8 @@ int main(int argc, char* argv[]){
 	printf("\nSetting window resolution to %d x %d", width, height);
 	fflush(stdout);
 	ioctlsocket(my_socket->sock, FIONBIO, &_true);
+	u_long rcvbuf = 65536;
+	ioctlsocket(my_socket->sock, FIONREAD, &rcvbuf);
 	
 	// Initializing SDL and openGL stuffs
 	uint8_t quit = 0;
@@ -166,7 +168,7 @@ int main(int argc, char* argv[]){
 		fflush(stdout);
 		
 		while (count < size){
-			int rbytes = recv(my_socket->sock, &buffer[count], 4096, 0);
+			int rbytes = recv(my_socket->sock, &buffer[count], 65536, 0);
 			if (rbytes >= 0) count += rbytes;
 			fflush(stdout);
 			while( SDL_PollEvent( &event ) ) {

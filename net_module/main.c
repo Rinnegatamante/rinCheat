@@ -48,6 +48,7 @@ int stream_thread(SceSize args, void* argp){
 	int stream_skt = 0xDEADBEEF;
 	int client_skt = -1;
 	encoder jpeg_encoder;
+	char unused[256];
 	for (;;){
 		if (stream_state){
 			if (stream_skt == 0xDEADBEEF){
@@ -68,6 +69,8 @@ int stream_thread(SceSize args, void* argp){
 				unsigned int cbAddrAccept = sizeof(addrAccept);
 				client_skt = sceNetAccept(stream_skt, (SceNetSockaddr*)&addrAccept, &cbAddrAccept);
 				if (client_skt >= 0){
+					int sndbuf_size = 65536;
+					sceNetSetsockopt(client_skt, SCE_NET_SOL_SOCKET, SCE_NET_SO_SNDBUF, &sndbuf_size, sizeof(sndbuf_size));
 					SceDisplayFrameBuf param;
 					param.size = sizeof(SceDisplayFrameBuf);
 					sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
@@ -78,8 +81,7 @@ int stream_thread(SceSize args, void* argp){
 			}
 			if (client_skt >= 0){
 				int bytes = 0;
-				char unused[256];
-				sceNetRecv(client_skt,unused,256,0);
+				sceNetRecv(client_skt,unused,9,0);
 				int mem_size = 0;
 				SceDisplayFrameBuf param;
 				param.size = sizeof(SceDisplayFrameBuf);
@@ -88,10 +90,10 @@ int stream_thread(SceSize args, void* argp){
 				char txt[32];
 				sprintf(txt, "%ld;", mem_size);
 				sceNetSend(client_skt, txt, 32, 0);
-				sceNetRecv(client_skt,unused,256,0);
+				sceNetRecv(client_skt,unused,9,0);
 				while (bytes < mem_size){
-					sceNetSend(client_skt, &((uint8_t*)mem)[bytes], bytes+4096 > mem_size ? mem_size - bytes : 4096, 0);
-					bytes += 4096;
+					sceNetSend(client_skt, &((uint8_t*)mem)[bytes], bytes+65536 > mem_size ? mem_size - bytes : 65536, 0);
+					bytes += 65536;
 				}
 			}
 		}else{
