@@ -107,7 +107,8 @@ int main(int argc, char* argv[]){
 	my_socket->addrTo.sin_family = AF_INET;
 	my_socket->addrTo.sin_port = htons(STREAM_PORT);
 	my_socket->addrTo.sin_addr.s_addr = inet_addr(host);
-	my_socket->sock = socket(AF_INET, SOCK_STREAM, 0);
+	int addrLen = sizeof(my_socket->addrTo);
+	my_socket->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (my_socket->sock < 0){
 		printf("\nFailed creating socket.");
 		return -1;
@@ -123,13 +124,14 @@ int main(int argc, char* argv[]){
 	fflush(stdout);
 	u_long _true = 1;
 	char sizes[32];
+	send(my_socket->sock, "request", 8, 0);
 	recv(my_socket->sock, sizes, 32, 0);
 	sscanf(sizes, "%d;%d", &width, &height);
 	printf("\nSetting window resolution to %d x %d", width, height);
 	fflush(stdout);
 	ioctlsocket(my_socket->sock, FIONBIO, &_true);
-	u_long rcvbuf = 65536;
-	ioctlsocket(my_socket->sock, FIONREAD, &rcvbuf);
+	int rcvbuf = 1*1024* 1024;
+	setsockopt(my_socket->sock, SOL_SOCKET, SO_RCVBUF, (char*)&rcvbuf, sizeof(rcvbuf));
 	
 	// Initializing SDL and openGL stuffs
 	uint8_t quit = 0;

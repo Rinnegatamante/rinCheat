@@ -30,78 +30,91 @@
 #include "ftpvita.h"
 
 #define STREAM_PORT 5000 // Port used for screen streaming
+#define STREAM_BUFSIZE 65536 // Size of stream buffer
 
 // Requests type
-#define NONE 0
-#define FTP_SWITCH 1
-#define SCREEN_STREAM 2
+enum{
+	NONE = 0,
+	FTP_SWITCH,
+	SCREEN_STREAM,
+	SET_LOWEST_QUALITY = 251,
+	SET_LOW_QUALITY = 252,
+	SET_NORMAL_QUALITY = 253,
+	SET_HIGH_QUALITY = 254,
+	SET_BEST_QUALITY = 255
+};
 
 volatile uint8_t request = NONE;
 volatile uint8_t stream_state = 0;
+uint8_t video_quality = 255;
 
 /*	
  * REVIEW:
  * 1) Some games don't have enough vram available to init sceJpegEnc encoder
- * 2) Code uses TCP which is slow, should be ported to UDP
  */
 int stream_thread(SceSize args, void* argp){
-	int stream_skt = 0xDEADBEEF;
-	int client_skt = -1;
+
+	// Internal stuffs
+	int stream_skt = -1;
+	int sndbuf_size = STREAM_BUFSIZE;
 	encoder jpeg_encoder;
 	char unused[256];
+	SceNetSockaddrIn addrTo, addrFrom;
+	unsigned int fromLen = sizeof(addrFrom);
+	unsigned long myAddr;
+	
+	// Initializing JPG encoder
+	SceDisplayFrameBuf param;
+	param.size = sizeof(SceDisplayFrameBuf);
+	sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
+	encoderInit(param.width, param.height, param.pitch, &jpeg_encoder, video_quality);
+	
+	// Streaming loop
 	for (;;){
 		if (stream_state){
-			if (stream_skt == 0xDEADBEEF){
-				stream_skt = sceNetSocket("Stream Socket", SCE_NET_AF_INET, SCE_NET_SOCK_STREAM, 0);
-				SceNetSockaddrIn addrTo;
+		
+			// Starting a new broadcast server socket
+			if (stream_skt < 0){
+				stream_skt = sceNetSocket("Stream Socket", SCE_NET_AF_INET, SCE_NET_SOCK_DGRAM, SCE_NET_IPPROTO_UDP);
 				addrTo.sin_family = SCE_NET_AF_INET;
 				addrTo.sin_port = sceNetHtons(STREAM_PORT);
-				addrTo.sin_addr.s_addr = sceNetHtonl(SCE_NET_INADDR_ANY);
-				sceNetBind(stream_skt, (SceNetSockaddr*)&addrTo, sizeof(addrTo));
-				sceNetListen(stream_skt, 128);
-				SceDisplayFrameBuf param;
-				param.size = sizeof(SceDisplayFrameBuf);
-				sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
-				encoderInit(param.width, param.height, param.pitch, &jpeg_encoder);
+				SceNetCtlInfo info;
+				sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info);
+				sceNetInetPton(SCE_NET_AF_INET, info.ip_address, &myAddr);
+				addrTo.sin_addr.s_addr = myAddr;
+				sceNetBind(stream_skt, (SceNetSockaddr*)&addrTo, sizeof(addrTo));			
+				sceNetSetsockopt(stream_skt, SCE_NET_SOL_SOCKET, SCE_NET_SO_SNDBUF, &sndbuf_size, sizeof(sndbuf_size));
+				
+				// Waiting until a client is connected
+				sceNetRecvfrom(stream_skt, unused, 8, 0, (SceNetSockaddr*)&addrFrom, &fromLen);
+				char txt[32];
+				sprintf(txt, "%d;%d", param.pitch, param.height);
+				sceNetSendto(stream_skt, txt, 32, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
+				
 			}
-			if (client_skt < 0){
-				SceNetSockaddrIn addrAccept;
-				unsigned int cbAddrAccept = sizeof(addrAccept);
-				client_skt = sceNetAccept(stream_skt, (SceNetSockaddr*)&addrAccept, &cbAddrAccept);
-				if (client_skt >= 0){
-					int sndbuf_size = 65536;
-					sceNetSetsockopt(client_skt, SCE_NET_SOL_SOCKET, SCE_NET_SO_SNDBUF, &sndbuf_size, sizeof(sndbuf_size));
-					SceDisplayFrameBuf param;
-					param.size = sizeof(SceDisplayFrameBuf);
-					sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
-					char txt[32];
-					sprintf(txt, "%d;%d", param.pitch, param.height);
-					sceNetSend(client_skt, txt, 32, 0);
-				}
-			}
-			if (client_skt >= 0){
+			
+			// Broadcasting framebuffer frames
+			if (stream_skt >= 0){
 				int bytes = 0;
-				sceNetRecv(client_skt,unused,9,0);
 				int mem_size = 0;
 				SceDisplayFrameBuf param;
 				param.size = sizeof(SceDisplayFrameBuf);
 				sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
-				uint8_t* mem = encodeABGR(&jpeg_encoder, param.base, param.width, param.height, param.pitch, &mem_size);
+				uint8_t* mem = encodeARGB(&jpeg_encoder, param.base, param.width, param.height, param.pitch, &mem_size);
 				char txt[32];
 				sprintf(txt, "%ld;", mem_size);
-				sceNetSend(client_skt, txt, 32, 0);
-				sceNetRecv(client_skt,unused,9,0);
+				sceNetSendto(stream_skt, txt, 32, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
+				sceNetRecvfrom(stream_skt,unused,9,0,(SceNetSockaddr*)&addrFrom, &fromLen);
 				while (bytes < mem_size){
-					sceNetSend(client_skt, &((uint8_t*)mem)[bytes], bytes+65536 > mem_size ? mem_size - bytes : 65536, 0);
-					bytes += 65536;
+					sceNetSendto(stream_skt, &((uint8_t*)mem)[bytes], bytes+STREAM_BUFSIZE > mem_size ? mem_size - bytes : STREAM_BUFSIZE, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
+					bytes += STREAM_BUFSIZE;
 				}
 			}
+			
 		}else{
-			if (stream_skt != 0xDEADBEEF){
-				sceNetSocketClose(client_skt);
+			if (stream_skt > 0){
 				sceNetSocketClose(stream_skt);
-				stream_skt = 0xDEADBEEF;
-				client_skt = 0;
+				stream_skt = -1;
 				encoderTerm(&jpeg_encoder);
 				sceKernelExitDeleteThread(0);
 			}
@@ -110,6 +123,7 @@ int stream_thread(SceSize args, void* argp){
 	return 0;
 }
 
+static uint8_t quality_list[] = {255, 200, 128, 64, 0};
 int main_thread(SceSize args, void *argp){
 
 	// Internal states
@@ -167,7 +181,13 @@ int main_thread(SceSize args, void *argp){
 					SceUID stream_thid = sceKernelCreateThread("rinCheat Stream", stream_thread,0x10000100, 0x10000, 0, 0, NULL);
 					sceKernelStartThread(stream_thid, 0, NULL);
 				}
+				break;
 			default:
+				if (request >= SET_LOWEST_QUALITY){
+					request -= SET_LOWEST_QUALITY;
+					video_quality = quality_list[request];
+					request = NONE; // Resetting request field
+				}
 				break;
 		}
 		sceKernelDelayThread(1000);

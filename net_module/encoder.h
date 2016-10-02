@@ -19,7 +19,7 @@
 #ifndef _ENCODER_H_
 #define _ENCODER_H_
 
-#define SceJpegEncoderContext void*
+#include <psp2/jpegenc.h>
 
 typedef struct encoder{
 	SceUID memblock;
@@ -29,24 +29,8 @@ typedef struct encoder{
 	SceJpegEncoderContext context;
 }encoder;
 
-enum {
-	PIXELFORMAT_ABGR8888 = 0,
-	PIXELFORMAT_YCBCR422 = 9
-};
-
-#define ABGR2YCBCR 16
-
-SceUID sceJpegEncoderInit(SceJpegEncoderContext context,SceUID iFrameWidth,SceUID iFrameHeight,SceUID pixelFormat,void* pJpeg, SceUID oJpegbufSize);
-SceUID sceJpegEncoderEncode(SceJpegEncoderContext context, void* pYCbCr);
-SceUID sceJpegEncoderSetCompressionRatio(SceJpegEncoderContext context,SceUID compratio);
-SceUID sceJpegEncoderSetOutputAddr(SceJpegEncoderContext context,void* pJpeg,SceUID oJpegbufSize);
-SceUID sceJpegEncoderCsc(SceJpegEncoderContext context,void* pYCbCr,void* pRGBA,SceUID iFrameWidth,SceUID inputPixelFormat);
-SceUID sceJpegEncoderGetContextSize();
-SceUID sceJpegEncoderSetValidRegion(SceJpegEncoderContext context, SceUID iFrameWidth, SceUID iFrameHeight);
-SceUID sceJpegEncoderEnd(SceJpegEncoderContext context);
-
-void encoderInit(int width, int height, int pitch, encoder* enc);
+void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_quality);
 void encoderTerm(encoder* enc);
-void* encodeABGR(encoder* enc, void* buffer, int width, int height, int pitch, int* outSize);
+void* encodeARGB(encoder* enc, void* buffer, int width, int height, int pitch, int* outSize);
 
 #endif

@@ -44,6 +44,7 @@ enum{
 	CHEATS_MENU,
 	HACKS_MENU,
 	SEARCH_MENU,
+	NET_MENU,
 	CHEATS_LIST
 };
 
@@ -61,14 +62,20 @@ enum{
 	STACK_RESTORE,
 	DO_ABS_SEARCH_EXT,
 	FTP_COMMUNICATION,
-	STREAM_COMMUNICATION // REVIEW: Needs some optimization
+	STREAM_COMMUNICATION,
+	CHANGE_STREAM_QUALITY
 };
 
 // Requests type for net module
 enum{
 	NONE = 0,
 	FTP_SWITCH,
-	STREAM_SWITCH
+	STREAM_SWITCH,
+	SET_LOWEST_QUALITY = 251,
+	SET_LOW_QUALITY = 252,
+	SET_NORMAL_QUALITY = 253,
+	SET_HIGH_QUALITY = 254,
+	SET_BEST_QUALITY = 255
 };
 
 // Color values
@@ -80,6 +87,7 @@ enum{
 extern int pheight;
 extern int pwidth;
 static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
+uint8_t quality_list[] = {255, 200, 128, 64, 0};
 static int search_type[] = {1, 2, 4, 8};
 int net_thread = 0;
 uint8_t* net_request = NULL;
@@ -106,6 +114,8 @@ int main_thread(SceSize args, void *argp) {
 	int search_idx = 7;
 	char temp[128];
 	char vita_ip[32];
+	uint8_t quality_idx = 0;
+	uint8_t quality_set = 0;
 	uint64_t dval = 0;
 	
 	// Getting title info
@@ -161,13 +171,15 @@ int main_thread(SceSize args, void *argp) {
 	db = loadCheatsDatabase(db_file, db);
 	
 	// Menus setup
-	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Cheats List"};
-	char* opt_main[] = {"Game Cheats","Game Hacks","Export decrypted savedata","Import decrypted savedata","FTP State: ","Stream Screen to PC: "};
+	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Net Module Menu", "Cheats List",};
+	char* opt_main[] = {"Game Cheats","Game Hacks","Net Module","Export decrypted savedata","Import decrypted savedata"};
 	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/data/rinCheat/stack.bin", "Inject stack from ux0:/data/rinCheat/stack.bin", "Return Main Menu"};
 	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ", "GPU Crossbar Clock: ", "Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
 	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Save offsets","Return Cheats Menu"};
-	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search};
-	int num_opt[] = {6, 5, 7, 8};
+	char* opt_net[] = {"FTP State: ", "Stream Screen to PC: ", "Screen Stream Video Quality: ", "Return Main Menu"};
+	char* opt_qualities[] = {"Lowest", "Low", "Normal", "High", "Best"};
+	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search, opt_net};
+	int num_opt[] = {5, 5, 7, 8, 4};
 	
 	// Main loop
 	for (;;){
@@ -234,13 +246,16 @@ int main_thread(SceSize args, void *argp) {
 										blit_stringf(5, y, opt[menu_state][m_idx]);
 										break;
 								}
-							}else if (menu_state == MAIN_MENU){
+							}else if (menu_state == NET_MENU){
 								switch (m_idx){
-									case 4:
+									case 0:
 										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], ftp ? "On - Listening on " : "Off", ftp ? vita_ip : "");
 										break;
-									case 5:
+									case 1:
 										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], pc_stream ? "On - Listening on " : "Off", pc_stream ? vita_ip : "");
+										break;
+									case 2:
+										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], opt_qualities[quality_idx]);
 										break;
 									default:
 										blit_stringf(5, y, opt[menu_state][m_idx]);
@@ -326,16 +341,16 @@ int main_thread(SceSize args, void *argp) {
 										menu_state = HACKS_MENU;
 										break;
 									case 2:
-										int_state = EXPORT_SAVEDATA;
+										if (net_thread != 0){
+											menu_idx = 0;
+											menu_state = NET_MENU;
+										}
 										break;
 									case 3:
-										int_state = IMPORT_SAVEDATA;
+										int_state = EXPORT_SAVEDATA;
 										break;
 									case 4:
-										if (net_thread != 0) int_state = FTP_COMMUNICATION;
-										break;
-									case 5:
-										if (net_thread != 0) int_state = STREAM_COMMUNICATION;
+										int_state = IMPORT_SAVEDATA;
 										break;
 								}								
 								break;
@@ -481,6 +496,24 @@ int main_thread(SceSize args, void *argp) {
 										break;
 								}
 								break;
+							case NET_MENU:
+								switch (menu_idx){
+									case 0:
+										if (net_thread != 0) int_state = FTP_COMMUNICATION;
+										break;
+									case 1:
+										if (net_thread != 0) int_state = STREAM_COMMUNICATION;
+										break;
+									case 2:
+										quality_idx++;
+										if (quality_idx > 4) quality_idx = 0;
+										int_state = CHANGE_STREAM_QUALITY;
+										break;
+									case 3:
+										menu_idx = 2;
+										menu_state = MAIN_MENU;
+										break;
+								}
 							case CHEATS_LIST:
 								if (numCheats > 0) int_state = APPLY_CHEAT;
 								break;
@@ -504,6 +537,10 @@ int main_thread(SceSize args, void *argp) {
 							case CHEATS_LIST:
 								menu_idx = 0;
 								menu_state = CHEATS_MENU;
+								break;
+							case NET_MENU:
+								menu_idx = 2;
+								menu_state = MAIN_MENU;
 								break;
 						}
 					}else if ((pad.buttons & SCE_CTRL_SQUARE) && (!(oldpad.buttons & SCE_CTRL_SQUARE))){
@@ -693,6 +730,12 @@ int main_thread(SceSize args, void *argp) {
 					int_state = MENU;
 					break;
 					
+				case CHANGE_STREAM_QUALITY:
+					
+					blit_stringf(5, 35, "Sending request to net module, please wait");
+					net_request[0] = SET_LOWEST_QUALITY + quality_idx;
+					int_state = MENU;
+					break;
 			}
 		}else{
 			if ((pad.buttons & SCE_CTRL_SELECT) && (pad.buttons & SCE_CTRL_START)){
@@ -703,6 +746,31 @@ int main_thread(SceSize args, void *argp) {
 				blit_clearscreen();
 				heap_scanner = checkHeap();
 				net_thread = checkNetModule();
+				if (!quality_set && net_thread != 0){ // We set screen streaming quality at first menu triggering
+					quality_set = 1;
+					switch (cfg.video_quality){
+						case 255:
+							quality_idx = 0;
+							net_request[0] = SET_LOWEST_QUALITY;
+							break;
+						case 200:
+							quality_idx = 1;
+							net_request[0] = SET_LOW_QUALITY;
+							break;
+						case 128:
+							quality_idx = 2;
+							net_request[0] = SET_NORMAL_QUALITY;
+							break;
+						case 64:
+							quality_idx = 3;
+							net_request[0] = SET_HIGH_QUALITY;
+							break;
+						case 0:
+							quality_idx = 4;
+							net_request[0] = SET_BEST_QUALITY;
+							break;
+					}
+				}
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
 		oldpad = pad;

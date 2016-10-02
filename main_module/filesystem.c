@@ -89,10 +89,11 @@ int loadTitleSettings(char* titleid, settings* cfg){
 		cfg->suspend = 1;
 		cfg->net = 1;
 		cfg->screenshot = 0;
+		cfg->video_quality = 255;
 		return -1;
 	}else{
 		sceIoRead(fd, tmp, 256);
-		sscanf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu",&cfg->cpu_clock,&cfg->gpu_clock,&cfg->bus_clock,&cfg->gpu_xbar_clock,&cfg->suspend,&cfg->net,&cfg->screenshot);
+		sscanf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu;%hhu",&cfg->cpu_clock,&cfg->gpu_clock,&cfg->bus_clock,&cfg->gpu_xbar_clock,&cfg->suspend,&cfg->net,&cfg->screenshot,&cfg->video_quality);
 		sceIoClose(fd);
 		return 0;
 	}
@@ -103,7 +104,7 @@ void saveTitleSettings(char* titleid, settings* cfg){
 	sprintf(tmp, "ux0:/data/rinCheat/settings/%s.txt", titleid);
 	sceIoRemove(tmp);
 	int fd = sceIoOpen(tmp, SCE_O_WRONLY | SCE_O_CREAT, 0777);
-	sprintf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu",cfg->cpu_clock,cfg->gpu_clock,cfg->bus_clock,cfg->gpu_xbar_clock,cfg->suspend,cfg->net,cfg->screenshot);
+	sprintf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu;%hhu",cfg->cpu_clock,cfg->gpu_clock,cfg->bus_clock,cfg->gpu_xbar_clock,cfg->suspend,cfg->net,cfg->screenshot,cfg->video_quality);
 	sceIoWrite(fd, tmp, strlen(tmp));
 	sceIoClose(fd);
 }

@@ -36,6 +36,7 @@ typedef struct settings{
 	uint8_t suspend;
 	uint8_t net;
 	uint8_t screenshot;
+	uint8_t video_quality;
 }settings;
 
 extern int numCheats;
