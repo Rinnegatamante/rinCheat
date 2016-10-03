@@ -38,7 +38,6 @@ struct jpeg_error_mgr jerr;
 struct jpeg_compress_struct cinfo;
 
 void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_quality){
-	enc->quality = video_quality;
 	enc->in_size = ALIGN((width*height)<<1, 256);
 	enc->out_size = ALIGN(width*height, 256);
 	uint32_t tempbuf_size = ALIGN(enc->in_size + enc->out_size,0x40000);
@@ -49,6 +48,16 @@ void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_q
 		sceKernelGetMemBlockBase(enc->memblock, &enc->tempbuf_addr);
 		enc->out_size = tempbuf_size;
 		enc->in_size = 1; // Used as a flag
+		cinfo.err = jpeg_std_error(&jerr);
+		jpeg_create_compress(&cinfo);
+		cinfo.image_width = width;
+		cinfo.image_height = height;
+		cinfo.input_components = 4;
+		cinfo.in_color_space = JCS_EXT_RGBA;
+		jpeg_set_defaults(&cinfo);
+		cinfo.dct_method = JDCT_FASTEST;
+		jpeg_set_colorspace(&cinfo, JCS_YCbCr);
+		jpeg_set_quality(&cinfo, 100 - ((100*video_quality) / 255), TRUE);
 	}else{ // Will use sceJpegEnc
 		enc->isHwAccelerated = 1;
 		sceKernelGetMemBlockBase(enc->memblock, &enc->tempbuf_addr);
@@ -64,7 +73,7 @@ void encoderTerm(encoder* enc){
 	if (enc->isHwAccelerated){
 		sceJpegEncoderEnd(enc->context);
 		free(enc->context);
-	}
+	}else jpeg_destroy_compress(&cinfo);
 	sceKernelFreeMemBlock(enc->memblock);
 }
 
@@ -75,22 +84,9 @@ void* encodeARGB(encoder* enc, void* buffer, int width, int height, int pitch, i
 		return enc->tempbuf_addr + enc->in_size;
 	}else{
 		JSAMPROW row_pointer[1];
-		cinfo.err = jpeg_std_error(&jerr);
-		jpeg_create_compress(&cinfo);
 		unsigned char* outBuffer = (unsigned char*)enc->tempbuf_addr;
 		long unsigned int out_size = enc->out_size;
-		jpeg_mem_dest(&cinfo, &outBuffer, &out_size);
-		cinfo.image_width = width;
-		cinfo.image_height = height;
-		cinfo.input_components = 4;
-		cinfo.in_color_space = JCS_EXT_RGBA;
-		jpeg_set_defaults(&cinfo);
-		cinfo.dct_method = JDCT_FASTEST;
-		if (enc->in_size){ // We calculate once the libjpeg video quality to use
-			enc->in_size = 0;
-			enc->quality = 100 - ((100*enc->quality) / 255);
-		}
-		jpeg_set_quality(&cinfo, enc->quality, TRUE);
+		jpeg_mem_dest(&cinfo, &outBuffer, &out_size);		
 		JSAMPLE* buf = (JSAMPLE*)buffer;
 		jpeg_start_compress(&cinfo, TRUE);
 		int row_stride = cinfo.image_width * cinfo.input_components;
@@ -99,8 +95,7 @@ void* encodeARGB(encoder* enc, void* buffer, int width, int height, int pitch, i
 			jpeg_write_scanlines(&cinfo, row_pointer, 1);
 		}
 		jpeg_finish_compress(&cinfo);
-		*outSize = out_size;
-		jpeg_destroy_compress(&cinfo);
+		*outSize = out_size;		
 		return enc->tempbuf_addr;
 	}
 }

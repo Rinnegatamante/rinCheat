@@ -28,7 +28,6 @@ typedef struct encoder{
 	uint32_t in_size;
 	uint32_t out_size;
 	SceJpegEncoderContext context;
-	uint8_t quality;
 }encoder;
 
 void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_quality);
