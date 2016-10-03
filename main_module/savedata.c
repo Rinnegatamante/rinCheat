@@ -58,9 +58,9 @@ void dumpSavedataDir(char* folder, char* target){
 				free(data);
 			}else{
 				int fd2 = sceIoOpen(target_p, SCE_O_WRONLY | SCE_O_CREAT, 0777);
-				char data[0x1000];
+				char data[CHUNK_SIZE];
 				int chunk_size;
-				while ((chunk_size=sceIoRead(fd,data,0x1000)) > 0){
+				while ((chunk_size=sceIoRead(fd,data,CHUNK_SIZE)) > 0){
 					sceIoWrite(fd2, data, chunk_size);
 				}
 				sceIoClose(fd2);
@@ -129,10 +129,10 @@ void restoreSavedataDir(char* folder, char* target){
 				sceAppUtilSaveDataDataSave(&saveSlot, &file, 1, NULL, &requiredSize);
 				free(data);
 			}else{
-				char data[0x1000];
+				char data[0x80000];
 				int chunk_size;
 				uint32_t offset = 0;
-				while ((chunk_size=sceIoRead(fd,data,0x1000)) > 0){
+				while ((chunk_size=sceIoRead(fd,data,0x80000)) > 0){
 					file.buf = data;
 					file.bufSize = chunk_size;
 					file.offset = offset;

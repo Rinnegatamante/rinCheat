@@ -33,7 +33,7 @@ void takeScreenshot(char* titleid){
 	sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
 	SceDateTime time;
 	sceRtcGetCurrentClockLocalTime(&time);
-	char filename[256], temp[0x1000];
+	char filename[256], temp[CHUNK_SIZE];
 	sprintf(filename,"ux0:/data/rinCheat/screenshots/%s_%d%d_%d%d%d.bmp",titleid,time.month,time.day,time.hour,time.minute,time.second);
 	int fd = sceIoOpen(filename, SCE_O_CREAT|SCE_O_WRONLY, 0777);
 	uint8_t* bmp_content;
@@ -65,9 +65,9 @@ void takeScreenshot(char* titleid){
 				uint8_t b = clr[0];
 				buffer[i] = (a<<24) | (b<<16) | (g<<8) | r;
 				i++;
-				if (i == 1024){
+				if (i == (CHUNK_SIZE>>2)){
 					i = 0;
-					sceIoWrite(fd, bmp_content, 0x1000);
+					sceIoWrite(fd, bmp_content, CHUNK_SIZE);
 					sceKernelPowerTick(1); // Since MMC screenshot is pretty slow
 				}
 			}
