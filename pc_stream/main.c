@@ -55,7 +55,8 @@ void updateFrame(){
 	if (new_frame != NULL){
 		SDL_FreeSurface(frame);
 		frame = new_frame;
-	}else printf("\nMalformed packet,frame will be skipped...");
+	}else printf("\nMalformed packet,frame will be skipped...");	
+	if (frame == NULL) return;
 	
 	fflush(stdout);
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -66,6 +67,7 @@ void updateFrame(){
 
 // Drawing function using openGL
 void drawFrame(){
+	if (texture == NULL) return;	
 	glClear( GL_COLOR_BUFFER_BIT );
 	glBindTexture( GL_TEXTURE_2D, texture );
 	glBegin( GL_QUADS );
@@ -159,31 +161,19 @@ int main(int argc, char* argv[]){
 	
 	for (;;){
 
-		int count = 0;
+		// Receiving a new frame
 		int rbytes = 0;
-		send(my_socket->sock, "request", 8, 0);
-		recv(my_socket->sock, sizes, 32, 0);
-		send(my_socket->sock, "request", 8, 0);
 		while (rbytes <= 0){
-			rbytes = recv(my_socket->sock, sizes, 32, 0);
-		}
-		sscanf(sizes, "%d;", &size);
-		fflush(stdout);
-		
-		while (count < size){
-			int rbytes = recv(my_socket->sock, &buffer[count], 65536, 0);
-			if (rbytes >= 0) count += rbytes;
-			fflush(stdout);
+			rbytes = recv(my_socket->sock, &buffer[count], 65536, 0);
 			while( SDL_PollEvent( &event ) ) {
 				if( event.type == SDL_QUIT ) {
 					quit = 1;
 				} 
 			}
 			if (quit) break;
+			size = rbytes;
 		}
 		if (quit) break;
-		
-		fflush(stdout);
 		
 		updateFrame();
 		drawFrame();

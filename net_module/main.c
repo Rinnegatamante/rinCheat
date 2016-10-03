@@ -30,7 +30,7 @@
 #include "ftpvita.h"
 
 #define STREAM_PORT 5000 // Port used for screen streaming
-#define STREAM_BUFSIZE 0xFFFF // Size of stream buffer
+#define STREAM_BUFSIZE 0x20000 // Size of stream buffer
 
 // Requests type
 enum{
@@ -84,6 +84,8 @@ int stream_thread(SceSize args, void* argp){
 				
 				// Waiting until a client is connected
 				sceNetRecvfrom(stream_skt, unused, 8, 0, (SceNetSockaddr*)&addrFrom, &fromLen);
+				
+				// Sending resolution settings
 				char txt[32];
 				sprintf(txt, "%d;%d", param.pitch, param.height);
 				sceNetSendto(stream_skt, txt, 32, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
@@ -98,14 +100,7 @@ int stream_thread(SceSize args, void* argp){
 				param.size = sizeof(SceDisplayFrameBuf);
 				sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
 				uint8_t* mem = encodeARGB(&jpeg_encoder, param.base, param.width, param.height, param.pitch, &mem_size);
-				char txt[32];
-				sprintf(txt, "%d;", mem_size);
-				sceNetSendto(stream_skt, txt, 32, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
-				sceNetRecvfrom(stream_skt,unused,9,0,(SceNetSockaddr*)&addrFrom, &fromLen);
-				while (bytes < mem_size){
-					sceNetSendto(stream_skt, &((uint8_t*)mem)[bytes], bytes+STREAM_BUFSIZE > mem_size ? mem_size - bytes : STREAM_BUFSIZE, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
-					bytes += STREAM_BUFSIZE;
-				}
+				sceNetSendto(stream_skt, mem, mem_size, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
 			}
 			
 		}else{
