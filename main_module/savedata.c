@@ -129,10 +129,10 @@ void restoreSavedataDir(char* folder, char* target){
 				sceAppUtilSaveDataDataSave(&saveSlot, &file, 1, NULL, &requiredSize);
 				free(data);
 			}else{
-				char data[0x80000];
+				char data[CHUNK_SIZE];
 				int chunk_size;
 				uint32_t offset = 0;
-				while ((chunk_size=sceIoRead(fd,data,0x80000)) > 0){
+				while ((chunk_size=sceIoRead(fd,data,CHUNK_SIZE)) > 0){
 					file.buf = data;
 					file.bufSize = chunk_size;
 					file.offset = offset;
