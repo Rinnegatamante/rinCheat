@@ -27,6 +27,11 @@
 
 // Dump/Restore decrypted savedata
 void dumpSavedataDir(char* folder, char* target){
+	
+	// Check if game is listed to force MMC mode
+	uint8_t force_mmc = 0;
+	if (strstr(target, "PCSE00934") != NULL) force_mmc = 1;
+	
 	sceIoMkdir(target, 0777);
 	SceIoDirent dirent;
 	SceUID fd = sceIoDopen(folder);
@@ -43,7 +48,7 @@ void dumpSavedataDir(char* folder, char* target){
 			int fd = sceIoOpen(path, SCE_O_RDONLY, 0777);
 			int size = sceIoLseek(fd, 0, SEEK_END);
 			sceIoLseek(fd, 0, SEEK_SET);
-			if (ram_mode){
+			if (ram_mode && !force_mmc){
 				char* data = (char*)malloc(size);
 				sceIoRead(fd, data, size);
 				sceIoClose(fd);
@@ -66,6 +71,11 @@ void dumpSavedataDir(char* folder, char* target){
 }
 
 void restoreSavedataDir(char* folder, char* target){
+
+	// Check if game is listed to force MMC mode
+	uint8_t force_mmc = 0;
+	if (strstr(folder, "PCSE00934") != NULL) force_mmc = 1;
+	
 	SceUID fd = sceIoDopen(folder);
 	SceIoDirent dirent;
 	while (sceIoDread(fd, &dirent) > 0) {
@@ -109,7 +119,7 @@ void restoreSavedataDir(char* folder, char* target){
 			SceAppUtilSaveDataFile file;
 			memset(&file, 0 ,sizeof(SceAppUtilSaveDataFile));
 			file.filePath = target_p;
-			if (ram_mode){
+			if (ram_mode && !force_mmc){
 				char* data = (char*)malloc(size);
 				sceIoRead(fd, data, size);
 				sceIoClose(fd);
