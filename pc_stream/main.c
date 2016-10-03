@@ -42,19 +42,21 @@ typedef struct{
 
 int width, height, size;
 SDL_Surface* frame = NULL;
+SDL_Surface* new_frame = NULL;
 char* buffer;
 GLint nofcolors = 3;
 GLenum texture_format=GL_RGB;
 GLuint texture=NULL;
 void updateFrame(){
 
-	if (frame != NULL) SDL_FreeSurface(frame);
-		
 	// Loading frame
 	SDL_RWops* rw = SDL_RWFromMem(buffer,size);
-	frame = IMG_Load_RW(rw, 1);
-	if (frame == NULL) printf("\n%s", SDL_GetError());
-	else printf("\nFrame loaded successfully");
+	new_frame = IMG_Load_RW(rw, 1);
+	if (new_frame != NULL){
+		SDL_FreeSurface(frame);
+		frame = new_frame;
+	}else printf("\nMalformed packet,frame will be skipped...");
+	
 	fflush(stdout);
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -166,7 +168,6 @@ int main(int argc, char* argv[]){
 			rbytes = recv(my_socket->sock, sizes, 32, 0);
 		}
 		sscanf(sizes, "%d;", &size);
-		printf("\nFrame size: %d", size);
 		fflush(stdout);
 		
 		while (count < size){
@@ -182,7 +183,6 @@ int main(int argc, char* argv[]){
 		}
 		if (quit) break;
 		
-		printf("\nDrawing frame...");
 		fflush(stdout);
 		
 		updateFrame();

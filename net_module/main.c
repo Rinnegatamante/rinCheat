@@ -30,7 +30,7 @@
 #include "ftpvita.h"
 
 #define STREAM_PORT 5000 // Port used for screen streaming
-#define STREAM_BUFSIZE 65536 // Size of stream buffer
+#define STREAM_BUFSIZE 0xFFFF // Size of stream buffer
 
 // Requests type
 enum{
@@ -47,6 +47,7 @@ enum{
 volatile uint8_t request = NONE;
 volatile uint8_t stream_state = 0;
 uint8_t video_quality = 255;
+unsigned long vita_addr;
 
 /*	
  * REVIEW:
@@ -61,7 +62,6 @@ int stream_thread(SceSize args, void* argp){
 	char unused[256];
 	SceNetSockaddrIn addrTo, addrFrom;
 	unsigned int fromLen = sizeof(addrFrom);
-	unsigned long myAddr;
 	
 	// Initializing JPG encoder
 	SceDisplayFrameBuf param;
@@ -78,10 +78,7 @@ int stream_thread(SceSize args, void* argp){
 				stream_skt = sceNetSocket("Stream Socket", SCE_NET_AF_INET, SCE_NET_SOCK_DGRAM, SCE_NET_IPPROTO_UDP);
 				addrTo.sin_family = SCE_NET_AF_INET;
 				addrTo.sin_port = sceNetHtons(STREAM_PORT);
-				SceNetCtlInfo info;
-				sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info);
-				sceNetInetPton(SCE_NET_AF_INET, info.ip_address, &myAddr);
-				addrTo.sin_addr.s_addr = myAddr;
+				addrTo.sin_addr.s_addr = vita_addr;
 				sceNetBind(stream_skt, (SceNetSockaddr*)&addrTo, sizeof(addrTo));			
 				sceNetSetsockopt(stream_skt, SCE_NET_SOL_SOCKET, SCE_NET_SO_SNDBUF, &sndbuf_size, sizeof(sndbuf_size));
 				
@@ -102,7 +99,7 @@ int stream_thread(SceSize args, void* argp){
 				sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
 				uint8_t* mem = encodeARGB(&jpeg_encoder, param.base, param.width, param.height, param.pitch, &mem_size);
 				char txt[32];
-				sprintf(txt, "%ld;", mem_size);
+				sprintf(txt, "%d;", mem_size);
 				sceNetSendto(stream_skt, txt, 32, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
 				sceNetRecvfrom(stream_skt,unused,9,0,(SceNetSockaddr*)&addrFrom, &fromLen);
 				while (bytes < mem_size){
@@ -144,11 +141,11 @@ int main_thread(SceSize args, void *argp){
 		initparam.flags = 0;
 		ret=sceNetInit(&initparam);
 	}
-	ret = sceNetCtlInit();
+	
+	sceNetCtlInit();
 	SceNetCtlInfo info;
 	sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info);
 	sprintf(vita_ip,"%s",info.ip_address);
-	SceNetInAddr vita_addr;
 	sceNetInetPton(SCE_NET_AF_INET, info.ip_address, &vita_addr);
 	
 	// Writing on a temp file request address in order to let main module to know about it
@@ -159,8 +156,6 @@ int main_thread(SceSize args, void *argp){
 	tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_WRONLY|SCE_O_CREAT|SCE_O_TRUNC, 0777);
 	sceIoWrite(tmp, vita_ip, strlen(vita_ip));
 	sceIoClose(tmp);
-	
-	SceCtrlData pad, oldpad;
 	
 	for (;;){
 		switch (request){
