@@ -1,0 +1,8 @@
+#x88888888 Yellow Essence
+@0x81D433E0 @0x054C5638 @4
+#Max Resistance
+@0x81D491F0 @0x0FA00FA0 @4
+#Infinite HP part1
+@0x81D491CC @0x27102710 @4
+#Infinite HP part2
+@0x81D491E0 @0x27102710 @4
