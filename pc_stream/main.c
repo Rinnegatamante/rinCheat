@@ -34,6 +34,7 @@
 #endif
 
 #define STREAM_PORT 5000 // Port to use
+#define RCV_BUFSIZE 0x100000 // Size of the buffer used to store received packets
 
 typedef struct{
 	uint32_t sock;
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]){
 	printf("\nSetting window resolution to %d x %d", width, height);
 	fflush(stdout);
 	ioctlsocket(my_socket->sock, FIONBIO, &_true);
-	int rcvbuf = 1*1024* 1024;
+	int rcvbuf = RCV_BUFSIZE;
 	setsockopt(my_socket->sock, SOL_SOCKET, SO_RCVBUF, (char*)&rcvbuf, sizeof(rcvbuf));
 	
 	// Initializing SDL and openGL stuffs
@@ -164,7 +165,7 @@ int main(int argc, char* argv[]){
 		// Receiving a new frame
 		int rbytes = 0;
 		while (rbytes <= 0){
-			rbytes = recv(my_socket->sock, &buffer[count], 65536, 0);
+			rbytes = recv(my_socket->sock, &buffer[count], RCV_BUFSIZE, 0);
 			while( SDL_PollEvent( &event ) ) {
 				if( event.type == SDL_QUIT ) {
 					quit = 1;

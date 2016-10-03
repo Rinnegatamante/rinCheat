@@ -47,7 +47,6 @@ void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_q
 		enc->memblock = sceKernelAllocMemBlock("encoderBuffer", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, tempbuf_size, NULL);
 		sceKernelGetMemBlockBase(enc->memblock, &enc->tempbuf_addr);
 		enc->out_size = tempbuf_size;
-		enc->in_size = 1; // Used as a flag
 		cinfo.err = jpeg_std_error(&jerr);
 		jpeg_create_compress(&cinfo);
 		cinfo.image_width = width;
