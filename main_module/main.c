@@ -90,7 +90,6 @@ static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
 uint8_t quality_list[] = {255, 200, 128, 64, 0};
 static int search_type[] = {1, 2, 4, 8};
 int net_thread = 0;
-uint8_t* net_request = NULL;
 
 int main_thread(SceSize args, void *argp) {
 	
@@ -710,7 +709,7 @@ int main_thread(SceSize args, void *argp) {
 					
 					blit_stringf(5, 35, "Sending request to net module, please wait");
 					ftp = !ftp;
-					net_request[0] = FTP_SWITCH;
+					sendNetRequest(FTP_SWITCH);
 					tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_RDONLY, 0777);
 					size = sceIoRead(tmp, vita_ip, 32);
 					vita_ip[size] = 0;
@@ -722,7 +721,7 @@ int main_thread(SceSize args, void *argp) {
 				
 					blit_stringf(5, 35, "Sending request to net module, please wait");
 					pc_stream = !pc_stream;
-					net_request[0] = STREAM_SWITCH;
+					sendNetRequest(STREAM_SWITCH);
 					tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_RDONLY, 0777);
 					size = sceIoRead(tmp, vita_ip, 32);
 					vita_ip[size] = 0;
@@ -733,7 +732,7 @@ int main_thread(SceSize args, void *argp) {
 				case CHANGE_STREAM_QUALITY:
 					
 					blit_stringf(5, 35, "Sending request to net module, please wait");
-					net_request[0] = SET_LOWEST_QUALITY + quality_idx;
+					sendNetRequest(SET_LOWEST_QUALITY + quality_idx);
 					int_state = MENU;
 					break;
 			}
@@ -748,28 +747,30 @@ int main_thread(SceSize args, void *argp) {
 				net_thread = checkNetModule();
 				if (!quality_set && net_thread != 0){ // We set screen streaming quality at first menu triggering
 					quality_set = 1;
+					uint8_t req_id;
 					switch (cfg.video_quality){
 						case 255:
 							quality_idx = 0;
-							net_request[0] = SET_LOWEST_QUALITY;
+							req_id = SET_LOWEST_QUALITY;
 							break;
 						case 200:
 							quality_idx = 1;
-							net_request[0] = SET_LOW_QUALITY;
+							req_id = SET_LOW_QUALITY;
 							break;
 						case 128:
 							quality_idx = 2;
-							net_request[0] = SET_NORMAL_QUALITY;
+							req_id = SET_NORMAL_QUALITY;
 							break;
 						case 64:
 							quality_idx = 3;
-							net_request[0] = SET_HIGH_QUALITY;
+							req_id = SET_HIGH_QUALITY;
 							break;
 						case 0:
 							quality_idx = 4;
-							net_request[0] = SET_BEST_QUALITY;
+							req_id = SET_BEST_QUALITY;
 							break;
 					}
+					sendNetRequest(req_id);
 				}
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}

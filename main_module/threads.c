@@ -26,7 +26,7 @@
 #define THREADS_RANGE 0x100000 // How many thread to scan starting from main thread
 
 extern int net_thread;
-extern uint8_t* net_request;
+uint8_t* net_request;
 
 // Generic thread scanner by name
 uint32_t searchThreadByName(const char* name){
@@ -56,6 +56,16 @@ uint32_t checkNetModule(){
 	
 	}
 	return thid;
+}
+
+// Send a request to net module
+void sendNetRequest(uint8_t id){
+	net_request[0] = id;
+	resumeMainThread();
+	while (net_request[0] == id){
+		sceKernelDelayThread(1000);
+	}
+	pauseMainThread();
 }
 	
 /*

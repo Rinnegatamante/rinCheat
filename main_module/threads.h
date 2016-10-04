@@ -23,6 +23,7 @@ SceUID main_thread_thid; // Main thread thid
  
 void pauseMainThread();
 void resumeMainThread();
+void sendNetRequest(uint8_t id);
 uint32_t searchThreadByName(const char* name);
 uint32_t checkNetModule();
 
