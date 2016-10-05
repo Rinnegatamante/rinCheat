@@ -49,10 +49,6 @@ volatile uint8_t stream_state = 0;
 uint8_t video_quality = 255;
 unsigned long vita_addr;
 
-/*	
- * REVIEW:
- * 1) Some games don't have enough vram available to init sceJpegEnc encoder
- */
 int stream_thread(SceSize args, void* argp){
 
 	// Internal stuffs
@@ -87,7 +83,7 @@ int stream_thread(SceSize args, void* argp){
 				
 				// Sending resolution settings
 				char txt[32];
-				sprintf(txt, "%d;%d", param.pitch, param.height);
+				sprintf(txt, "%d;%d;%hhu", param.pitch, param.height, jpeg_encoder.isHwAccelerated);
 				sceNetSendto(stream_skt, txt, 32, 0, (SceNetSockaddr*)&addrFrom, sizeof(addrFrom));
 				
 			}

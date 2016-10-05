@@ -128,10 +128,12 @@ int main(int argc, char* argv[]){
 	}else printf("\nConnection established!");
 	fflush(stdout);
 	u_long _true = 1;
+	uint8_t accelerated;
 	char sizes[32];
 	send(my_socket->sock, "request", 8, 0);
 	recv(my_socket->sock, sizes, 32, 0);
-	sscanf(sizes, "%d;%d", &width, &height);
+	sscanf(sizes, "%d;%d;%hhu", &width, &height, &accelerated);
+	printf("\nThe game %s hardware acceleration.", accelerated ? "supports" : "does not support");
 	printf("\nSetting window resolution to %d x %d", width, height);
 	fflush(stdout);
 	ioctlsocket(my_socket->sock, FIONBIO, &_true);
@@ -165,7 +167,7 @@ int main(int argc, char* argv[]){
 		// Receiving a new frame
 		int rbytes = 0;
 		while (rbytes <= 0){
-			rbytes = recv(my_socket->sock, &buffer[count], RCV_BUFSIZE, 0);
+			rbytes = recv(my_socket->sock, buffer, RCV_BUFSIZE, 0);
 			while( SDL_PollEvent( &event ) ) {
 				if( event.type == SDL_QUIT ) {
 					quit = 1;
