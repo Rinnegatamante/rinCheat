@@ -1,4 +1,4 @@
--- Legend of Heroes: Trails of Cold Steel (USA)
+﻿-- Legend of Heroes: Trails of Cold Steel (USA)
 -- Credits: currowth
 
 needs_crc32 = false
@@ -13,5 +13,5 @@ cur_chts = {
 	{["name"]="x9999999 Black Sepith", ["offset"]=0x65C78, ["file"]="save000.dat", ["value"]=0x98967F, ["size"]=4},
 	{["name"]="x9999999 Yellow Sepith", ["offset"]=0x65C7C, ["file"]="save000.dat", ["value"]=0x98967F, ["size"]=4},
 	{["name"]="x9999999 White Sepith", ["offset"]=0x65C80, ["file"]="save000.dat", ["value"]=0x98967F, ["size"]=4},
-	{["name"]="x99 U-Material", ["offset"]=0x4165A, ["file"]="save000.dat", ["value"]=0x63, ["size"]=2}
-} 
+	{["name"]="x99 U-Material", ["offset"]=0x4165A, ["file"]="save000.dat", ["value"]=0x63, ["size"]=2},
+}

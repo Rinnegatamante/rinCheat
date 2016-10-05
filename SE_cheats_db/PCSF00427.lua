@@ -1,8 +1,7 @@
--- Dead Nation (GLOBAL)
+﻿-- Dead Nation (ALL)
 -- Credits: Slade
 
 needs_crc32 = false
-
 
 cur_chts = {
 	{["name"]="9,999,999 Cash", ["offset"]=0x6A47, ["file"]="SAVE.DAT", ["value"]=0x98967F, ["size"]=4},
@@ -54,5 +53,5 @@ cur_chts = {
 	{["name"]="Auto-Turret Unlock (No purchase)", ["offset"]=0x6C07, ["file"]="SAVE.DAT", ["value"]=0x03, ["size"]=1},
 	{["name"]="Auto-Turret Purchasable", ["offset"]=0x6C13, ["file"]="SAVE.DAT", ["value"]=0x0303, ["size"]=4},
 	{["name"]="Auto-Turret Max Level", ["offset"]=0x6C0B, ["file"]="SAVE.DAT", ["value"]=0x0303, ["size"]=4},
-	{["name"]="Auto-Turret Infinite Ammo", ["offset"]=0x6C1D, ["file"]="SAVE.DAT", ["value"]=0xFFFF, ["size"]=4}
+	{["name"]="Auto-Turret Infinite Ammo", ["offset"]=0x6C1D, ["file"]="SAVE.DAT", ["value"]=0xFFFF, ["size"]=4},
 }
