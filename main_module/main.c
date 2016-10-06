@@ -770,7 +770,7 @@ int main_thread(SceSize args, void *argp) {
 							req_id = SET_BEST_QUALITY;
 							break;
 					}
-					sendNetRequest(req_id);
+					if (net_thread != 0) sendNetRequest(req_id);
 				}
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
