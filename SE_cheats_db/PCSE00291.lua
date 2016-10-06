@@ -1,4 +1,4 @@
-﻿-- Crazy Market (UNK)
+﻿-- Crazy Market (EUR)
 -- Credits: Slade
 
 needs_crc32 = false
