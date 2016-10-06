@@ -1,4 +1,4 @@
-﻿-- Nun Attack (USA)
+﻿-- Nun Attack (EUR)
 -- Credits: Slade
 
 needs_crc32 = false
