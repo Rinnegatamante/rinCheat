@@ -56,7 +56,7 @@ void updateFrame(){
 	if (new_frame != NULL){
 		SDL_FreeSurface(frame);
 		frame = new_frame;
-	}else printf("\nMalformed packet,frame will be skipped...");	
+	}else printf("\nSDL Error: %s", SDL_GetError());
 	if (frame == NULL) return;
 	
 	fflush(stdout);

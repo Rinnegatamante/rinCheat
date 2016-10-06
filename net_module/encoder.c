@@ -49,7 +49,7 @@ void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_q
 		enc->out_size = tempbuf_size;
 		cinfo.err = jpeg_std_error(&jerr);
 		jpeg_create_compress(&cinfo);
-		cinfo.image_width = width;
+		cinfo.image_width = pitch;
 		cinfo.image_height = height;
 		cinfo.input_components = 4;
 		cinfo.in_color_space = JCS_EXT_RGBA;
