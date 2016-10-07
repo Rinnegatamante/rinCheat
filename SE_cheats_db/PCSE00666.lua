@@ -1,4 +1,4 @@
-﻿-- Heroes of Loot (UNK)
+-- Heroes of Loot (USA)
 -- Credits: Slade
 
 needs_crc32 = false
@@ -10,5 +10,5 @@ cur_chts = {
 	{["name"]="999 Health", ["offset"]=0x77, ["file"]="SaveGave.sav", ["value"]=0x3E7, ["size"]=4},
 	{["name"]="Max Level", ["offset"]=0x87, ["file"]="SaveGave.sav", ["value"]=0x14, ["size"]=1},
 	{["name"]="Max Score", ["offset"]=0x9F, ["file"]="SaveGave.sav", ["value"]=0xF423F, ["size"]=4},
-	{["name"]="Dungeon 29", ["offset"]=0x49, ["file"]="SaveGave.sav", ["value"]=0x1D, ["size"]=4},
+	{["name"]="Dungeon 29", ["offset"]=0x49, ["file"]="SaveGave.sav", ["value"]=0x1D, ["size"]=4}
 }
