@@ -1,0 +1,12 @@
+#9,999,999 Cash
+@0x827BBA38 @0x0098967F @4
+#999 Tantalum
+@0x827BBA3C @0x03E7 @2
+#10 Yellow Barrier Passes
+@0x827BBA4C @0x0A @1
+#10 Green Barrier Passes
+@0x827BBA44 @0x0A @1
+#10 Red Barrier Passes
+@0x827BBA40 @0x0A @1
+#10 Blue Barrier Passes
+@0x827BBA48 @0x0A @1

@@ -1,4 +1,4 @@
-﻿-- Heroes of Loot (USA)
+-- Heroes of Loot (USA)
 -- Credits: Slade
 
 needs_crc32 = false
