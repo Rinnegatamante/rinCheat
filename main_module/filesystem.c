@@ -21,6 +21,7 @@
 #include <string.h>
 #include <psp2/io/fcntl.h>
 #include <psp2/io/stat.h>
+#include <psp2/io/dirent.h>
 #include <psp2/power.h>
 #include "filesystem.h"
 
@@ -107,4 +108,14 @@ void saveTitleSettings(char* titleid, settings* cfg){
 	sprintf(tmp,"%hu;%hu;%hu;%hu;%hhu;%hhu;%hhu;%hhu",cfg->cpu_clock,cfg->gpu_clock,cfg->bus_clock,cfg->gpu_xbar_clock,cfg->suspend,cfg->net,cfg->screenshot,cfg->video_quality);
 	sceIoWrite(fd, tmp, strlen(tmp));
 	sceIoClose(fd);
+}
+
+uint8_t isDirectoryEmpty(char* dir){
+	SceUID d = sceIoDopen(dir);
+	SceIoDirent f;
+	uint8_t res = 0;
+	int ret = sceIoDread(d, &f);
+	if (ret > 0) res = 1;
+	sceIoDclose(d);
+	return res;
 }

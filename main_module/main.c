@@ -45,6 +45,7 @@ enum{
 	HACKS_MENU,
 	SEARCH_MENU,
 	NET_MENU,
+	SAVEDATA_MENU,
 	CHEATS_LIST
 };
 
@@ -98,6 +99,8 @@ int main_thread(SceSize args, void *argp) {
 	sceIoMkdir("ux0:/data/rinCheat/db", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/screenshots", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/settings", 0777);
+	sceIoMkdir("ux0:/data/savegames", 0777);
+	uint8_t saveslot = 0;
 	int started = 0;
 	int ftp = 0;
 	int pc_stream = 0;
@@ -110,6 +113,7 @@ int main_thread(SceSize args, void *argp) {
 	int heap_scanner;
 	int search_id = 2;
 	char search_val[] = "0000000000000000";
+	uint8_t slotstate[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	int search_idx = 7;
 	char temp[128];
 	char vita_ip[32];
@@ -121,6 +125,15 @@ int main_thread(SceSize args, void *argp) {
 	char titleid[16], title[256];
 	sceAppMgrAppParamGetString(0, 9, title , 256);
 	sceAppMgrAppParamGetString(0, 12, titleid , 256);
+	
+	// Creating saveslots directories if they don't exist
+	sprintf(temp, "ux0:/data/savegames/%s", titleid);
+	sceIoMkdir(temp, 0777);
+	for (tmp=0; tmp<=9; tmp++){
+		sprintf(temp, "ux0:/data/savegames/%s/SLOT%d", titleid, tmp);
+		sceIoMkdir(temp, 0777);
+		slotstate[tmp] = isDirectoryEmpty(temp);
+	}
 	
 	// Loading default settings file if it exists
 	settings cfg;
@@ -170,15 +183,16 @@ int main_thread(SceSize args, void *argp) {
 	db = loadCheatsDatabase(db_file, db);
 	
 	// Menus setup
-	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Net Module Menu", "Cheats List",};
-	char* opt_main[] = {"Game Cheats","Game Hacks","Net Module","Export decrypted savedata","Import decrypted savedata"};
+	char* menus[] = {"Main Menu", "Cheats Menu", "Hacks Menu", "Search Value", "Net Module Menu", "Savedata Menu", "Cheats List"};
+	char* opt_main[] = {"Game Cheats","Game Hacks","Net Module","Manage Savedatas"};
 	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/data/rinCheat/stack.bin", "Inject stack from ux0:/data/rinCheat/stack.bin", "Return Main Menu"};
 	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ", "GPU Crossbar Clock: ", "Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
 	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Save offsets","Return Cheats Menu"};
 	char* opt_net[] = {"FTP State: ", "Stream Screen to PC: ", "Screen Stream Video Quality: ", "Return Main Menu"};
 	char* opt_qualities[] = {"Lowest", "Low", "Normal", "High", "Best"};
-	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search, opt_net};
-	int num_opt[] = {5, 5, 7, 8, 4};
+	char* opt_savedata[] = {"Current Slot: ", "State: ", "Import decrypted savedata", "Export decrypted savedata", "Return Main Menu"};
+	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search, opt_net, opt_savedata};
+	int num_opt[] = {4, 5, 7, 8, 4, 5};
 	
 	// Main loop
 	for (;;){
@@ -255,6 +269,20 @@ int main_thread(SceSize args, void *argp) {
 										break;
 									case 2:
 										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], opt_qualities[quality_idx]);
+										break;
+									default:
+										blit_stringf(5, y, opt[menu_state][m_idx]);
+										break;
+								}
+							}else if (menu_state == SAVEDATA_MENU){
+								switch (m_idx){
+									case 0:
+										blit_stringf(5, y, "%s%hhu", opt[menu_state][m_idx], saveslot);
+										break;
+									case 1:
+										blit_set_color(slotstate[saveslot] ? GREEN : RED);
+										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], slotstate[saveslot] ? "Full" : "Empty");
+										blit_set_color(WHITE);
 										break;
 									default:
 										blit_stringf(5, y, opt[menu_state][m_idx]);
@@ -346,11 +374,8 @@ int main_thread(SceSize args, void *argp) {
 										}
 										break;
 									case 3:
-										int_state = EXPORT_SAVEDATA;
-										break;
-									case 4:
-										int_state = IMPORT_SAVEDATA;
-										break;
+										menu_idx = 0;
+										menu_state = SAVEDATA_MENU;
 								}								
 								break;
 							case CHEATS_MENU:
@@ -513,6 +538,26 @@ int main_thread(SceSize args, void *argp) {
 										menu_state = MAIN_MENU;
 										break;
 								}
+								break;
+							case SAVEDATA_MENU:
+								switch (menu_idx){
+									case 0:
+										blit_clearscreen();
+										saveslot++;
+										if (saveslot == 10) saveslot = 0;
+										break;
+									case 2:
+										if (slotstate[saveslot]) int_state = IMPORT_SAVEDATA;
+										break;
+									case 3:
+										int_state = EXPORT_SAVEDATA;
+										break;
+									case 4:
+										menu_idx = 3;
+										menu_state = MAIN_MENU;
+										break;
+								}
+								break;
 							case CHEATS_LIST:
 								if (numCheats > 0) int_state = APPLY_CHEAT;
 								break;
@@ -592,14 +637,15 @@ int main_thread(SceSize args, void *argp) {
 						}
 					}else if ((pad.buttons & SCE_CTRL_DOWN) && (!(oldpad.buttons & SCE_CTRL_DOWN))){
 						menu_idx++;
-						if (menu_state != CHEATS_LIST){	if (menu_idx >= num_opt[menu_state]) menu_idx = 0;
-						}else if (menu_idx >= numCheats) menu_idx = 0;
+						if (menu_state == CHEATS_LIST && menu_idx >= numCheats) menu_idx = 0;
+						else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx++;
+						else if (menu_state != CHEATS_LIST && menu_idx >= num_opt[menu_state]) menu_idx = 0;
 					}else if ((pad.buttons & SCE_CTRL_UP) && (!(oldpad.buttons & SCE_CTRL_UP))){
 						menu_idx--;
 						if (menu_idx < 0){
-							if (menu_state != CHEATS_LIST) menu_idx = num_opt[menu_state]-1;
-							else menu_idx = numCheats-1;
-						}
+							if (menu_state == CHEATS_LIST) menu_idx = numCheats-1;
+							else menu_idx = num_opt[menu_state]-1;
+						}else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx--;
 					}
 					
 					blit_stringf(5, hmax-64, "Target info: ");
@@ -678,15 +724,16 @@ int main_thread(SceSize args, void *argp) {
 				case EXPORT_SAVEDATA:
 					
 					blit_stringf(5, 35, "Exporting savedata, please wait");
-					sprintf(temp,"ux0:/data/rinCheat/%s_SAVEDATA", titleid);
-					dumpSavedataDir("savedata0:",temp);	
+					sprintf(temp,"ux0:/data/savegames/%s/SLOT%hhu", titleid, saveslot);
+					dumpSavedataDir("savedata0:",temp);
+					slotstate[saveslot] = isDirectoryEmpty(temp);
 					int_state = MENU;
 					break;
 					
 				case IMPORT_SAVEDATA:
 					
 					blit_stringf(5, 35, "Importing savedata, please wait");
-					sprintf(temp,"ux0:/data/rinCheat/%s_SAVEDATA", titleid);
+					sprintf(temp,"ux0:/data/savegames/%s/SLOT%hhu", titleid, saveslot);
 					restoreSavedataDir(temp, NULL);
 					int_state = MENU;
 					break;

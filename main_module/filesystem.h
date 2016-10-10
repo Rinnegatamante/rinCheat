@@ -44,5 +44,6 @@ extern int numCheats;
 cheatDB* loadCheatsDatabase(char* db_file, cheatDB* db);
 int loadTitleSettings(char* titleid, settings* cfg);
 void saveTitleSettings(char* titleid, settings* cfg);
+uint8_t isDirectoryEmpty(char* dir);
 
 #endif
