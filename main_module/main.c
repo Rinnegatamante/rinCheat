@@ -635,12 +635,14 @@ int main_thread(SceSize args, void *argp) {
 						if (menu_state == CHEATS_LIST && menu_idx >= numCheats) menu_idx = 0;
 						else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx++;
 						else if (menu_state != CHEATS_LIST && menu_idx >= num_opt[menu_state]) menu_idx = 0;
+						if (menu_state == CHEATS_LIST) blit_clearscreen();
 					}else if ((pad.buttons & SCE_CTRL_UP) && (!(oldpad.buttons & SCE_CTRL_UP))){
 						menu_idx--;
 						if (menu_idx < 0){
 							if (menu_state == CHEATS_LIST) menu_idx = numCheats-1;
 							else menu_idx = num_opt[menu_state]-1;
 						}else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx--;
+						if (menu_state == CHEATS_LIST) blit_clearscreen();
 					}
 					
 					blit_stringf(5, hmax-64, "Target info: ");
