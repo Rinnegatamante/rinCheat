@@ -85,8 +85,6 @@ enum{
 #define RED 0x000000ff
 #define GREEN 0x0000ff00
 
-extern int pheight;
-extern int pwidth;
 static int freq_list[] = { 111, 166, 222, 266, 333, 366, 444 };
 uint8_t quality_list[] = {255, 200, 128, 64, 0};
 static int search_type[] = {1, 2, 4, 8};
@@ -101,6 +99,7 @@ int main_thread(SceSize args, void *argp) {
 	sceIoMkdir("ux0:/data/rinCheat/settings", 0777);
 	sceIoMkdir("ux0:/data/savegames", 0777);
 	uint8_t saveslot = 0;
+	int hmax, pwidth, pheight;
 	int started = 0;
 	int ftp = 0;
 	int pc_stream = 0;
@@ -118,7 +117,7 @@ int main_thread(SceSize args, void *argp) {
 	char temp[128];
 	char vita_ip[32];
 	uint8_t quality_idx = 0;
-	uint8_t quality_set = 0;
+	uint8_t setup = 0;
 	uint64_t dval = 0;
 	
 	// Getting title info
@@ -143,10 +142,6 @@ int main_thread(SceSize args, void *argp) {
 		scePowerSetBusClockFrequency(cfg.bus_clock);
 		scePowerSetGpuXbarClockFrequency(cfg.gpu_xbar_clock);
 	}
-	
-	// Patch for games that use resolution different from native one (Like Minecraft)
-	 blit_setup();
-	int hmax = pheight - 84;
 	
 	// Loading net module
 	SceCtrlData pad, oldpad;
@@ -792,32 +787,48 @@ int main_thread(SceSize args, void *argp) {
 				blit_clearscreen();
 				heap_scanner = checkHeap();
 				net_thread = checkNetModule();
-				if (!quality_set && net_thread != 0){ // We set screen streaming quality at first menu triggering
-					quality_set = 1;
-					uint8_t req_id;
-					switch (cfg.video_quality){
-						case 255:
-							quality_idx = 0;
-							req_id = SET_LOWEST_QUALITY;
-							break;
-						case 200:
-							quality_idx = 1;
-							req_id = SET_LOW_QUALITY;
-							break;
-						case 128:
-							quality_idx = 2;
-							req_id = SET_NORMAL_QUALITY;
-							break;
-						case 64:
-							quality_idx = 3;
-							req_id = SET_HIGH_QUALITY;
-							break;
-						case 0:
-							quality_idx = 4;
-							req_id = SET_BEST_QUALITY;
-							break;
+				if (!setup){
+					setup = 1;
+					
+					// Setting saved stream video quality
+					if (net_thread != 0){
+						uint8_t req_id;
+						switch (cfg.video_quality){
+							case 255:
+								quality_idx = 0;
+								req_id = SET_LOWEST_QUALITY;
+								break;
+							case 200:
+								quality_idx = 1;
+								req_id = SET_LOW_QUALITY;
+								break;
+							case 128:
+								quality_idx = 2;
+								req_id = SET_NORMAL_QUALITY;
+								break;
+							case 64:
+								quality_idx = 3;
+								req_id = SET_HIGH_QUALITY;
+								break;
+							case 0:
+								quality_idx = 4;
+								req_id = SET_BEST_QUALITY;
+								break;
+						}
+						sendNetRequest(req_id);
 					}
-					if (net_thread != 0) sendNetRequest(req_id);
+					
+					// Grabbing game resolution
+					SceDisplayFrameBuf param;
+					param.size = sizeof(SceDisplayFrameBuf);
+					sceDisplayWaitVblankStart();
+					sceDisplayGetFrameBuf(&param, SCE_DISPLAY_SETBUF_NEXTFRAME);
+					pheight = param.height;
+					pwidth = param.width;
+					
+					// Patch for games that use resolution different from native one (Like Minecraft)
+					hmax = pheight - 84;
+					
 				}
 			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
 		}
