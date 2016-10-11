@@ -13,14 +13,45 @@ I also expect no one bitching me if this happens cause, in that case, i can also
 
 ## Features
 
-- Cheats Database support
-- Real-Time Cheats with a Stack+Heap searcher+injector
-- Screenshot feature with higher quality for any games
-- Clockage change
-- Decrypted savedata export/import
-- Stack dumping/restoring
-- Autosuspend hack to disable autosuspend feature of PSVITA
-- FTP support during game sessions
+- Realtime cheats with cheats database support.
+- Realtime memory scanner with (partial) heap scanner and main thread stack scanner.
+- Decrypted savedata exporter/importer with multiple saveslots.
+- Improved screenshot feature (no compression) in any game and any situation.
+- FTP Server during gaming phase.
+- Possibility to change console clockage with CPU, GPU, BUS, GPU Crossbar support.
+- Possibility to disable Auto Suspend feature while in game.
+- Possibility to stream PSVITA screen to PC while gaming.
+
+## Credits
+
+- Slade for his constant work pushing new cheats to the cheat database.
+- Everyone who contributed to the cheat database.
+- gnmmarechal, Slade and Red7s for testing stuffs.
+
+## Controls
+
+While in game press START+SELECT to open rinCheat menu.
+<br><br>
+In rinCheat menu:
+- Cross = Select option / Increase selected number in the memory scanner
+- Triangle = Return to previous menu
+- Up/Down = Change selected option
+- eft/Down = Change selected number in the memory scanner
+- Square = Decrease selected number in the memory scanner
+- Start = Return to the game
+<br><br>
+When screenshot feature is enabled (Game Hacks), press L+R+START to take a screenshot.
+<br><br>
+When starting a game, you can also:<br>
+- Hold R to skip net module loading
+- Hold L to force MMC mode
+
+## MMC or RAM mode
+
+These are the differences between MMC and RAM mode:<br>
+<br>
+Screenshots taking = Faster in RAM mode<br>
+Cheats List support = Limited in MMC mode (due to low available memory)
 
 ## How to install and use
 
@@ -65,5 +96,15 @@ Example:
 
 ## How to use (Decrypted savedata dumper/restorer)
 
-Such features are available on main menu. Dumper will save the savedata to ux0:/data/rinCheat/TITLEID_SAVEDATA.
+Such features are available on Manage Savedatas menu. Dumper will save the savedata to ux0:/data/rinCheat/TITLEID/SLOTX where X is the currently selected Slot. 
 Edit your savedata as you wish and then you can re-inject it back by using the related feature.
+
+## How to use (FTP Server)
+
+FTP Server is available on Net Module menu. Just enable it and connect to the IP showed in the menu.
+<br>NOTE: If you can't see any folder when connected just manually input the folder to show (ex: ux0:/).
+
+## How to use (Screen Stream)
+
+Screen Stream feature is available on Net Module menu. You can select the video quality of the stream (Lower = Best Framerate, Higher = Best Video Quality) and then you can start the stream by enabling the related feature. Then you only have to start the PC application and insert the IP shown on PSVITA to connect.
+<br>NOTE: To change stream quality when you are already streaming, you must first disable stream, then change video quality of the stream and then re-enable the stream.
