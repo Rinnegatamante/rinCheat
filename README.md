@@ -36,10 +36,10 @@ In rinCheat menu:
 - Cross = Select option / Increase selected number in the memory scanner
 - Triangle = Return to previous menu
 - Up/Down = Change selected option
-- eft/Down = Change selected number in the memory scanner
+- Left/Right = Change selected number in the memory scanner
 - Square = Decrease selected number in the memory scanner
 - Start = Return to the game
-<br><br>
+
 When screenshot feature is enabled (Game Hacks), press L+R+START to take a screenshot.
 <br><br>
 When starting a game, you can also:<br>
