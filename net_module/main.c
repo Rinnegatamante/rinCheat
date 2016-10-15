@@ -130,7 +130,7 @@ int main_thread(SceSize args, void *argp){
 		if (initparam.memory == NULL) sceKernelExitDeleteThread(0);
 		initparam.size = 0x100000;
 		initparam.flags = 0;
-		ret=sceNetInit(&initparam);
+		sceNetInit(&initparam);
 	}
 	
 	sceNetCtlInit();

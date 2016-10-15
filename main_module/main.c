@@ -92,12 +92,17 @@ int net_thread = 0;
 
 int main_thread(SceSize args, void *argp) {
 	
+	// Waiting a bit to let the game inits its stuffs
 	sceKernelDelayThread(5 * 1000 * 1000);
+	
+	// Creating required folders for rinCheat if they don't exist
 	sceIoMkdir("ux0:/data/rinCheat", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/db", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/screenshots", 0777);
 	sceIoMkdir("ux0:/data/rinCheat/settings", 0777);
 	sceIoMkdir("ux0:/data/savegames", 0777);
+	
+	// Internal stuffs
 	uint8_t saveslot = 0;
 	int hmax, pwidth, pheight;
 	int started = 0;
@@ -160,7 +165,7 @@ int main_thread(SceSize args, void *argp) {
 		sceKernelGetThreadInfo(main_thread_thid, &status);
 	}
 	
-	// Check if we'll use RAM or MMC storage
+	// Check if we'll use RAM or MMC mode
 	if (!(oldpad.buttons & SCE_CTRL_LTRIGGER)){
 		uint8_t* test = malloc(status.stackSize);
 		if (test != NULL){
@@ -354,42 +359,42 @@ int main_thread(SceSize args, void *argp) {
 						switch (menu_state){
 							case MAIN_MENU:
 								switch (menu_idx){
-									case 0:
+									case 0: // Open Game Cheats Menu
 										menu_idx = 0;
 										menu_state = CHEATS_MENU;
 										break;
-									case 1:
+									case 1: // Open Game Hacks Menu
 										menu_idx = 0;
 										menu_state = HACKS_MENU;
 										break;
-									case 2:
+									case 2: // Open Net Module Menu
 										if (net_thread != 0){
 											menu_idx = 0;
 											menu_state = NET_MENU;
 										}
 										break;
-									case 3:
+									case 3: // Open Manage Savedata 
 										menu_idx = 0;
 										menu_state = SAVEDATA_MENU;
 								}								
 								break;
 							case CHEATS_MENU:
 								switch (menu_idx){
-									case 0:
+									case 0: // Open Cheats List Menu
 										menu_idx = 0;
 										menu_state = CHEATS_LIST;
 										break;
 									case 1:
-										menu_idx = 0;
+										menu_idx = 0; // Open Search Menu
 										menu_state = SEARCH_MENU;
 										break;
-									case 2:
+									case 2: // Execute a main thread stack dump
 										int_state = STACK_DUMP;
 										break;
-									case 3:
+									case 3: // Execute a main thread stack restore
 										int_state = STACK_RESTORE;
 										break;
-									case 4:
+									case 4: // Return Main Menu
 										menu_idx = 0;
 										menu_state = MAIN_MENU;
 										break;
@@ -397,7 +402,7 @@ int main_thread(SceSize args, void *argp) {
 								break;
 							case HACKS_MENU:
 								switch (menu_idx){
-									case 0:
+									case 0: // Change CPU Clock
 										i = 0;
 										freq = scePowerGetArmClockFrequency();
 										while(freq_list[i] != freq){i++;}
@@ -406,7 +411,7 @@ int main_thread(SceSize args, void *argp) {
 										if (freq == scePowerGetArmClockFrequency()) scePowerSetArmClockFrequency(111);
 										cfg.cpu_clock = scePowerGetArmClockFrequency();
 										break;
-									case 1:
+									case 1: // Change BUS Clock
 										i = 0;
 										freq = scePowerGetBusClockFrequency();
 										while(freq_list[i] != freq){i++;}
@@ -415,7 +420,7 @@ int main_thread(SceSize args, void *argp) {
 										if (freq == scePowerGetBusClockFrequency()) scePowerSetBusClockFrequency(111);
 										cfg.bus_clock = scePowerGetArmClockFrequency();
 										break;
-									case 2:
+									case 2: // Change GPU Clock
 										i = 0;
 										freq = scePowerGetGpuClockFrequency();
 										while(freq_list[i] != freq){i++;}
@@ -424,7 +429,7 @@ int main_thread(SceSize args, void *argp) {
 										if (freq == scePowerGetGpuClockFrequency()) scePowerSetGpuClockFrequency(111);
 										cfg.gpu_clock = scePowerGetArmClockFrequency();
 										break;
-									case 3:
+									case 3: // Change GPU Crossbar Clock
 										i = 0;
 										freq = scePowerGetGpuXbarClockFrequency();
 										while(freq_list[i] != freq){i++;}
@@ -433,15 +438,15 @@ int main_thread(SceSize args, void *argp) {
 										if (freq == scePowerGetGpuXbarClockFrequency()) scePowerSetGpuXbarClockFrequency(111);
 										cfg.gpu_xbar_clock = scePowerGetGpuXbarClockFrequency();
 										break;
-									case 4:
+									case 4: // Enable/Disable AutoSuspend Hack
 										blit_clearscreen();
 										cfg.suspend = !cfg.suspend;
 										break;
-									case 5:
+									case 5: // Enable/Disable Screenshots Feature
 										blit_clearscreen();
 										cfg.screenshot = !cfg.screenshot;
 										break;
-									case 6:
+									case 6: // Return Main Menu
 										menu_idx = 1;
 										menu_state = MAIN_MENU;
 										break;
@@ -449,7 +454,7 @@ int main_thread(SceSize args, void *argp) {
 								break;
 							case SEARCH_MENU:
 								switch (menu_idx){
-									case 0:
+									case 0: // Change Selected Byte Value
 										i = search_val[14-((search_type[search_id]-1)<<1)+search_idx]-0x30;
 										if (i < 0x16){
 											if (i != 0x09) search_val[14-((search_type[search_id]-1)<<1)+search_idx]++;
@@ -469,7 +474,7 @@ int main_thread(SceSize args, void *argp) {
 											}
 										}
 										break;
-									case 1:
+									case 1: // Change Value Size
 										blit_clearscreen();
 										search_id++;
 										if (search_id > 3) search_id = 0;
@@ -488,28 +493,28 @@ int main_thread(SceSize args, void *argp) {
 												break;
 										}
 										break;
-									case 2:
+									case 2: // Execute Absolute Search on Stack
 										int_state = DO_ABS_SEARCH;
 										break;
-									case 3:
+									case 3: // Execute Absolute Search on Stack+Heap
 										int_state = DO_ABS_SEARCH_EXT;
 										break;
-									case 4:
+									case 4: // Execute Relative Search
 										if (results_num != -2){
 											int_state = DO_REL_SEARCH;
 										}
 										break;
-									case 5:
+									case 5: // Inject new value
 										if (results_num != -2){
 											int_state = INJECT_MEMORY;
 										}
 										break;
-									case 6:
+									case 6: // Save found offsets
 										if (results_num != -2){
 											int_state = SAVE_OFFSETS;
 										}
 										break;
-									case 7:
+									case 7: // Return Cheats Menu
 										menu_idx = 1;
 										menu_state = CHEATS_MENU;
 										break;
@@ -517,18 +522,18 @@ int main_thread(SceSize args, void *argp) {
 								break;
 							case NET_MENU:
 								switch (menu_idx){
-									case 0:
+									case 0: // Enable/Disable FTP Server
 										if (net_thread != 0) int_state = FTP_COMMUNICATION;
 										break;
-									case 1:
+									case 1: // Enable/Disable Screen Streaming
 										if (net_thread != 0) int_state = STREAM_COMMUNICATION;
 										break;
-									case 2:
+									case 2: // Change Stream Video Quality
 										quality_idx++;
 										if (quality_idx > 4) quality_idx = 0;
 										int_state = CHANGE_STREAM_QUALITY;
 										break;
-									case 3:
+									case 3: // Return Main Menu
 										menu_idx = 2;
 										menu_state = MAIN_MENU;
 										break;
@@ -536,24 +541,24 @@ int main_thread(SceSize args, void *argp) {
 								break;
 							case SAVEDATA_MENU:
 								switch (menu_idx){
-									case 0:
+									case 0: // Change Selected Saveslot
 										blit_clearscreen();
 										saveslot++;
 										if (saveslot == 10) saveslot = 0;
 										break;
-									case 2:
+									case 2: // Import a Savedata
 										if (slotstate[saveslot]) int_state = IMPORT_SAVEDATA;
 										break;
-									case 3:
+									case 3: // Export a Savedata
 										int_state = EXPORT_SAVEDATA;
 										break;
 									case 4:
-										menu_idx = 3;
+										menu_idx = 3; // Return Main Menu
 										menu_state = MAIN_MENU;
 										break;
 								}
 								break;
-							case CHEATS_LIST:
+							case CHEATS_LIST: // Apply a cheat
 								if (numCheats > 0) int_state = APPLY_CHEAT;
 								break;
 						}
@@ -586,7 +591,7 @@ int main_thread(SceSize args, void *argp) {
 						switch (menu_state){
 							case SEARCH_MENU:
 								blit_clearscreen();
-								if (menu_idx == 0){
+								if (menu_idx == 0){ // Change Selected Byte Value
 									i = search_val[14-((search_type[search_id]-1)<<1)+search_idx]-0x30;
 									if (i > 0){
 										if (i != 0x11) search_val[14-((search_type[search_id]-1)<<1)+search_idx]--;
@@ -613,7 +618,7 @@ int main_thread(SceSize args, void *argp) {
 					}else if ((pad.buttons & SCE_CTRL_LTRIGGER) && (!(oldpad.buttons & SCE_CTRL_LTRIGGER))){
 						switch (menu_state){
 							case SEARCH_MENU:
-								if (menu_idx == 0){
+								if (menu_idx == 0){ // Change Selected Byte
 									search_idx--;
 									if (search_idx < 0) search_idx++;
 								}
@@ -623,7 +628,7 @@ int main_thread(SceSize args, void *argp) {
 					}else if ((pad.buttons & SCE_CTRL_RTRIGGER) && (!(oldpad.buttons & SCE_CTRL_RTRIGGER))){
 						switch (menu_state){
 							case SEARCH_MENU:
-								if (menu_idx == 0){
+								if (menu_idx == 0){ // Change Selected Byte
 									search_idx++;
 									if (search_idx > (search_type[search_id]<<1)-1) search_idx--;
 								}
@@ -643,17 +648,18 @@ int main_thread(SceSize args, void *argp) {
 							else menu_idx = num_opt[menu_state]-1;
 						}else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx--;
 						if (menu_state == CHEATS_LIST) blit_clearscreen();
-					}
-					
-					blit_stringf(5, hmax-64, "Target info: ");
-					blit_stringf(5, hmax-44, "Title: %s", title);
-					blit_stringf(5, hmax-24, "TitleID: %s", titleid);
-					blit_stringf(pwidth-130, hmax-24, ram_mode ? "RAM Mode" : "MMC Mode");
-					if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))){
+					}else if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))){
 						started = 0;
 						saveTitleSettings(titleid, &cfg);
 						resumeMainThread();
 					}
+					
+					// Plugin State and Target Info Showing
+					blit_stringf(5, hmax-64, "Target info: ");
+					blit_stringf(5, hmax-44, "Title: %s", title);
+					blit_stringf(5, hmax-24, "TitleID: %s", titleid);
+					blit_stringf(pwidth-130, hmax-24, ram_mode ? "RAM Mode" : "MMC Mode");
+					
 					break;
 					
 				case STACK_DUMP:	

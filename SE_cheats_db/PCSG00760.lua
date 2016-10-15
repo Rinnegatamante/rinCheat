@@ -1,4 +1,4 @@
--- Gundam Breaker 3 (ASN)
+-- Gundam Breaker 3 (JPN)
 -- Credits: hippotamamus, Sabishinbo, ness151
 
 needs_crc32 = false

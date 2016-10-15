@@ -1,4 +1,4 @@
--- Mobile Suit Gundam Extreme Vs Force
+-- Mobile Suit Gundam Extreme Vs Force (ASN)
 -- Credits: ness151
 
 needs_crc32 = false

@@ -1,4 +1,4 @@
--- Digimon: Next 0rder
+-- Digimon: Next Order (ASN)
 -- Credits: hippotamamus, ness151
 
 needs_crc32 = false
