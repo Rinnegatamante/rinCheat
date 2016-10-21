@@ -21,9 +21,10 @@ local yellow = Color.new(255,255,0)
 local white = Color.new(255,255,255)
 local cyan = Color.new(0,255,255)
 local black = Color.new(0,0,0)
-local mode = 0 -- 0 = Savedata select, 1 = Cheat select, 2 = Cheat apply
+local mode = 0 -- 0 = Savedata select, 1 = Cheat select, 2 = Slot select, 3 = Cheat apply
 local cur_svdt = nil
 local cht_idx = 1
+local slt_menu_idx = 1
 local to_apply = false
 local updates_checked = false
 
@@ -211,9 +212,10 @@ end
 function int2str(num, size)
 	local tmp = 0
 	local bytes = ""
+	local extra_shift = 4 - size
 	while tmp < size do
 		tmp = tmp + 1
-		bytes = string.char((num<<((tmp-1)<<3))>>((size-1)<<3)) .. bytes
+		bytes = string.char((num<<((extra_shift+tmp-1)<<3))>>((extra_shift+size-1)<<3)) .. bytes
 	end
 	return bytes
 end
@@ -263,13 +265,19 @@ function crc32(buffer)
 	return (hash ~ 0xFFFFFFFF)	
 end
 
--- Scanning rinCheat folder
-local files = System.listDirectory("ux0:/data/rinCheat")
+-- Scanning savegames folder
+local slots = {}
+local files = System.listDirectory("ux0:/data/savegames")
 local savedatas = {}
 for i, entry in pairs(files) do
 	if entry.directory then
-		if string.find(entry.name, "_SAVEDATA") ~= nil then
-			table.insert(savedatas, {["name"]=string.sub(entry.name,1,9)})
+		local slots = System.listDirectory("ux0:/data/savegames/"..entry.name)
+		for i, slot in pairs(slots) do
+			local slot_files = System.listDirectory("ux0:/data/savegames/"..entry.name.."/"..slot.name)
+			if #slot_files > 0 then
+				table.insert(savedatas, {["name"]=string.sub(entry.name,1,9)})
+				break
+			end
 		end
 	end
 end
@@ -354,7 +362,16 @@ while true do
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
 			if #cur_chts > 0 then
 				mode = 2
-				to_apply = true
+				slots = {} -- Resetting slots table before generating it
+				local slt_idx = 0
+				while slt_idx <= 9 do
+					if System.doesFileExist("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slt_idx.."/"..cur_chts[cht_idx].file) then
+						table.insert(slots,{["name"] = "Slot " .. slt_idx, ["idx"] = slt_idx})
+					end
+					slt_idx = slt_idx + 1
+				end
+				st_draw = 1
+				slt_menu_idx = 1
 			end
 		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
 			cht_idx = cht_idx - 1
@@ -381,10 +398,41 @@ while true do
 			st_draw = svdt_idx - 25
 		end
 	
-	-- Cheat application
+	-- Slot selection
 	elseif mode == 2 then
-		if to_apply then
-			handle = io.open("ux0:/data/rinCheat/"..cur_svdt.name.."_SAVEDATA/"..cur_chts[cht_idx].file, FRDWR)
+		renderMenu(slots, slt_menu_idx, "Select savegame slot where to apply", "No compatible savegame detected.")
+		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
+			mode = 3
+			to_apply = slots[slt_menu_idx].idx		
+		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
+			slt_menu_idx = slt_menu_idx - 1
+			if slt_menu_idx < 1 then
+				slt_menu_idx = #slots
+			end
+			if slt_menu_idx > 25 then
+				st_draw = slt_menu_idx - 24
+			else
+				st_draw = 1
+			end
+		elseif Controls.check(pad, SCE_CTRL_DOWN) and not Controls.check(oldpad, SCE_CTRL_DOWN) then
+			slt_menu_idx = slt_menu_idx + 1
+			if slt_menu_idx > #slots then
+				slt_menu_idx = 1
+			end
+			if slt_menu_idx > 25 then
+				st_draw = slt_menu_idx - 24
+			else
+				st_draw = 1
+			end
+		elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) then
+			mode = 1
+			st_draw = cht_idx - 25
+		end
+		
+	-- Cheat application
+	elseif mode == 3 then
+		if to_apply >= 0 then
+			handle = io.open("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FRDWR)
 			io.seek(handle, cur_chts[cht_idx].offset, SET)
 			io.write(handle, int2str(cur_chts[cht_idx].value,cur_chts[cht_idx].size), cur_chts[cht_idx].size)
 			
@@ -395,8 +443,8 @@ while true do
 				save_buffer = io.read(handle, save_size)
 				patched_crc = crc32(save_buffer)
 				io.close(handle)
-				System.deleteFile("ux0:/data/rinCheat/"..cur_svdt.name.."_SAVEDATA/"..cur_chts[cht_idx].file)
-				handle = io.open("ux0:/data/rinCheat/"..cur_svdt.name.."_SAVEDATA/"..cur_chts[cht_idx].file, FCREATE)
+				System.deleteFile("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file)
+				handle = io.open("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FCREATE)
 				io.write(handle, int2str(patched_crc, 4), 4)
 				io.write(handle, save_buffer, string.len(save_buffer))
 				io.close(handle)
@@ -404,7 +452,7 @@ while true do
 				io.close(handle)
 			end
 			
-			to_apply = false
+			to_apply = -1
 		end
 		renderMenu({}, 0, "Cheat application", "Done! Press Cross to return to the cheats list.") -- Fake menu
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
