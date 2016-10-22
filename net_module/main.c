@@ -23,6 +23,7 @@
 #include <psp2/sysmodule.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/net/net.h>
+#include <psp2/kernel/sysmem.h>
 #include <psp2/net/netctl.h>
 #include <psp2/ctrl.h>
 #include <psp2/io/fcntl.h>
@@ -30,7 +31,7 @@
 #include "ftpvita.h"
 
 #define STREAM_PORT 5000 // Port used for screen streaming
-#define STREAM_BUFSIZE 0x20000 // Size of stream buffer
+#define STREAM_BUFSIZE 0x80000 // Size of stream buffer
 
 // Requests type
 enum{
@@ -127,7 +128,11 @@ int main_thread(SceSize args, void *argp){
 	if (ret == SCE_NET_ERROR_ENOTINIT) {
 		SceNetInitParam initparam;
 		initparam.memory = malloc(0x100000);
-		if (initparam.memory == NULL) sceKernelExitDeleteThread(0);
+		if (initparam.memory == NULL){
+			SceUID netblock = sceKernelAllocMemBlock("netBlock", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, 0x100000, NULL);
+			if (netblock < 0) sceKernelExitDeleteThread(0);
+			else sceKernelGetMemBlockBase(netblock, &initparam.memory);
+		}
 		initparam.size = 0x100000;
 		initparam.flags = 0;
 		sceNetInit(&initparam);

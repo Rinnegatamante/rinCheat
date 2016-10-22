@@ -34,7 +34,7 @@
 #endif
 
 #define STREAM_PORT 5000 // Port to use
-#define RCV_BUFSIZE 0x100000 // Size of the buffer used to store received packets
+#define RCV_BUFSIZE 0x800000 // Size of the buffer used to store received packets
 
 typedef struct{
 	uint32_t sock;
@@ -93,6 +93,7 @@ int main(int argc, char* argv[]){
 	WSAStartup(versionWanted, &wsaData);
 	#endif
 	
+	int dummy = 4;
 	char host[32];
 	if (argc > 1){
 		char* ip = (char*)(argv[1]);
@@ -139,6 +140,8 @@ int main(int argc, char* argv[]){
 	ioctlsocket(my_socket->sock, FIONBIO, &_true);
 	int rcvbuf = RCV_BUFSIZE;
 	setsockopt(my_socket->sock, SOL_SOCKET, SO_RCVBUF, (char*)&rcvbuf, sizeof(rcvbuf));
+	getsockopt(my_socket->sock, SOL_SOCKET, SO_RCVBUF, (char*)(&rcvbuf), &dummy);
+	printf("\nReceive buffer size set to %d bytes", rcvbuf);
 	
 	// Initializing SDL and openGL stuffs
 	uint8_t quit = 0;
