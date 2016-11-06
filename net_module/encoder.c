@@ -50,11 +50,12 @@ void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_q
 		cinfo.err = jpeg_std_error(&jerr);
 		jpeg_create_compress(&cinfo);
 		cinfo.image_width = pitch;
+		enc->rowstride = pitch<<2;
 		cinfo.image_height = height;
 		cinfo.input_components = 4;
 		cinfo.in_color_space = JCS_EXT_RGBA;
 		jpeg_set_defaults(&cinfo);
-		cinfo.dct_method = JDCT_FASTEST;
+		cinfo.dct_method = JDCT_FLOAT;
 		jpeg_set_colorspace(&cinfo, JCS_YCbCr);
 		jpeg_set_quality(&cinfo, 100 - ((100*video_quality) / 255), TRUE);
 	}else{ // Will use sceJpegEnc
@@ -82,16 +83,14 @@ void* encodeARGB(encoder* enc, void* buffer, int width, int height, int pitch, i
 		*outSize = sceJpegEncoderEncode(enc->context, enc->tempbuf_addr);
 		return enc->tempbuf_addr + enc->in_size;
 	}else{
-		JSAMPROW row_pointer[1];
 		unsigned char* outBuffer = (unsigned char*)enc->tempbuf_addr;
 		long unsigned int out_size = enc->out_size;
-		jpeg_mem_dest(&cinfo, &outBuffer, &out_size);		
-		JSAMPLE* buf = (JSAMPLE*)buffer;
+		jpeg_mem_dest(&cinfo, &outBuffer, &out_size);
 		jpeg_start_compress(&cinfo, TRUE);
-		int row_stride = cinfo.image_width * cinfo.input_components;
-		while (cinfo.next_scanline < cinfo.image_height){
-			row_pointer[0] = &buf[cinfo.next_scanline * row_stride];
-			jpeg_write_scanlines(&cinfo, row_pointer, 1);
+		int y;
+		for (y = 0; y < cinfo.image_height; y++){
+			jpeg_write_scanlines(&cinfo, (JSAMPARRAY)&buffer, 1);
+			buffer += enc->rowstride;
 		}
 		jpeg_finish_compress(&cinfo);
 		*outSize = out_size;		

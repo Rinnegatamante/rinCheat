@@ -27,7 +27,8 @@ typedef struct encoder{
 	void* tempbuf_addr;
 	uint32_t in_size;
 	uint32_t out_size;
-	SceJpegEncoderContext context;
+	SceJpegEncoderContext context; // Used only by sceJpegEnc
+	uint32_t rowstride; // Used only by libjpeg
 }encoder;
 
 void encoderInit(int width, int height, int pitch, encoder* enc, uint8_t video_quality);
