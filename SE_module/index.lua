@@ -21,6 +21,7 @@ local yellow = Color.new(255,255,0)
 local white = Color.new(255,255,255)
 local cyan = Color.new(0,255,255)
 local black = Color.new(0,0,0)
+local grey = Color.new(40, 40, 40)
 local mode = 0 -- 0 = Savedata select, 1 = Cheat select, 2 = Slot select, 3 = Cheat apply
 local cur_svdt = nil
 local cht_idx = 1
@@ -193,6 +194,9 @@ function checkUpdates()
 	getRemoteVersion()
 	if System.doesFileExist("ux0:/data/rinCheat/VERSION.lua") then
 		dofile("ux0:/data/rinCheat/VERSION.lua")
+		if locale_ver == "DEBUG" then
+			return false
+		end
 		dofile("ux0:/data/rinCheat/remote.lua")
 		if remote_ver ~= locale_ver then
 			System.deleteFile("ux0:/data/rinCheat/VERSION.lua")
@@ -265,6 +269,47 @@ function crc32(buffer)
 	return (hash ~ 0xFFFFFFFF)	
 end
 
+-- Return index of last space for text argument
+function LastSpace(text)
+	found = false
+	start = -1
+	while string.sub(text,start,start) ~= " " do
+		start = start - 1
+	end
+	return start
+end
+
+-- Shows a Warning on screen
+function showWarning(text)
+	if text ~= nil then
+		local text_lines = {}
+		while string.len(text) > 90 do
+			endl = 91 + LastSpace(string.sub(text,1,90))
+			table.insert(text_lines,string.sub(text,1,endl))
+			text = string.sub(text,endl+1,-1)
+		end
+		if string.len(text) > 0 then
+			table.insert(text_lines,text)
+		end
+		table.insert(text_lines, " ")
+		table.insert(text_lines, "Press START to continue.")
+		while true do
+			Graphics.initBlend()
+			Graphics.fillRect(10, 950,100, 125 + #text_lines * 20, grey)
+			for i, line in pairs(text_lines) do
+				Graphics.debugPrint(15, 100 + i*20, line, white)
+			end
+			Graphics.termBlend()
+			Screen.flip()
+			Screen.waitVblankStart()
+			local pad = Controls.read()
+			if Controls.check(pad, SCE_CTRL_START) then
+				break
+			end
+		end
+	end
+end
+
 -- Scanning savegames folder
 local slots = {}
 local files = System.listDirectory("ux0:/data/savegames")
@@ -285,7 +330,9 @@ local svdt_idx = 1
 
 -- Loads a cheat database
 cur_chts = {}
+warning = nil
 function populateCheatsTable(titleid)
+	warning = nil
 	if System.doesFileExist("ux0:/data/rinCheat/SE_db/"..titleid..".lua") then
 		dofile("ux0:/data/rinCheat/SE_db/"..titleid..".lua")
 	else
@@ -330,6 +377,9 @@ while true do
 		renderMenu(savedatas, svdt_idx, "Select game savedata to modify", "No savedata found.")		
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
 			populateCheatsTable(savedatas[svdt_idx].name)
+			if warning ~= nil then
+				showWarning(warning)
+			end
 			mode = 1
 			cur_svdt = savedatas[svdt_idx]
 			st_draw = 1
