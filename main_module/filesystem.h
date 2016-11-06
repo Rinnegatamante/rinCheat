@@ -25,7 +25,7 @@ typedef struct cheatDB{
 	uint64_t val;
 	uint8_t size;
 	void* next;
-	uint8_t state;
+	uint8_t state; // 0 = Disabled, 1 = Enabled, 2 = Freezed
 }cheatDB;
 
 typedef struct settings{

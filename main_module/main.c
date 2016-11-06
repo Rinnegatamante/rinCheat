@@ -38,6 +38,8 @@
 #include "filesystem.h"
 #include "screenshot.h"
 
+#define MAX_FREEZES 1024 // Max number of freezable offsets
+
 // Menu states
 enum{
 	MAIN_MENU = 0,
@@ -64,7 +66,8 @@ enum{
 	DO_ABS_SEARCH_EXT,
 	FTP_COMMUNICATION,
 	STREAM_COMMUNICATION,
-	CHANGE_STREAM_QUALITY
+	CHANGE_STREAM_QUALITY,
+	FREEZE_CHEAT
 };
 
 // Requests type for net module
@@ -103,6 +106,8 @@ int main_thread(SceSize args, void *argp) {
 	sceIoMkdir("ux0:/data/savegames", 0777);
 	
 	// Internal stuffs
+	uint64_t freeze_list[MAX_FREEZES*3]; // 1024 freezable entries
+	memset(&freeze_list[0], 0, (MAX_FREEZES*3)<<3);
 	uint8_t saveslot = 0;
 	int hmax, pwidth, pheight;
 	int started = 0;
@@ -318,7 +323,7 @@ int main_thread(SceSize args, void *argp) {
 									sel = cur;
 								}
 								blit_set_color(clr);
-								blit_stringf(5, y, "%s [%s]", cur->name, cur->state ? "Enabled" : "Disabled");
+								blit_stringf(5, y, "%s [%s]", cur->name, cur->state == 1 ? "Used" : (cur->state == 2 ? "Enabled" : "Disabled"));
 								y+=20;
 							}
 							m_idx++;
@@ -612,6 +617,9 @@ int main_thread(SceSize args, void *argp) {
 									}
 									break;
 								}
+							case CHEATS_LIST:
+								if (numCheats > 0) int_state = FREEZE_CHEAT;
+								break;
 							default:
 								break;
 						}
@@ -716,10 +724,48 @@ int main_thread(SceSize args, void *argp) {
 					
 				case APPLY_CHEAT:
 					
-					sel->state = !sel->state;
+					sel->state = (sel->state ? 0 : 1);
 					if (sel->state){
 						blit_stringf(5, 35, "Applying cheat, please wait");
 						injectValue((uint8_t*)sel->offset, sel->val, sel->size);
+					}
+					int_state = MENU;
+					break;
+					
+				case FREEZE_CHEAT:
+					
+					sel->state = ((sel->state == 2) ? 0 : 2);
+					int freeze_i = 0;
+					if (sel->state){
+						blit_stringf(5, 35, "Applying cheat, please wait");
+						injectValue((uint8_t*)sel->offset, sel->val, sel->size);
+						while (freeze_list[freeze_i]){
+							if (freeze_i < MAX_FREEZES) freeze_i += 3;
+							else break;
+						}
+						if (freeze_i >= MAX_FREEZES) sel->state = 0;
+						else{
+							freeze_list[freeze_i] = sel->offset;
+							freeze_list[freeze_i+1] = sel->val;
+							freeze_list[freeze_i+2] = sel->size;
+						}
+					}else{
+						while (freeze_list[freeze_i] != sel->offset){
+							freeze_i += 3;
+						}
+						void* dst_addr = &freeze_list[freeze_i];
+						void* src_addr = &freeze_list[freeze_i + 3];
+						freeze_i += 3;
+						int start_i = freeze_i;
+						while (freeze_list[freeze_i]){
+							if (freeze_i < MAX_FREEZES) freeze_i += 3;
+							else break;
+						}
+						if (start_i == freeze_i){ // There are no other freezed values after selected one
+							memset(&freeze_list[freeze_i - 3], 0, 24);
+						}else{
+							memmove(dst_addr, src_addr, (uint32_t)&freeze_list[freeze_i] - (uint32_t)src_addr);
+						}
 					}
 					int_state = MENU;
 					break;
@@ -838,7 +884,14 @@ int main_thread(SceSize args, void *argp) {
 					hmax = pheight - 84;
 					
 				}
-			}else sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
+			}else{
+				int freeze_i = 0;
+				while (freeze_list[freeze_i]){
+					injectValue((uint8_t*)freeze_list[freeze_i],freeze_list[freeze_i+1],freeze_list[freeze_i+2]);
+					freeze_i += 3;
+				}
+				sceKernelDelayThread(1000); // Invoking scheduler to not slowdown games
+			}
 		}
 		oldpad = pad;
 	}
