@@ -1,7 +1,7 @@
 TARGET  = rinCheat
-OBJS    = main.o blit.o font.o memory.o threads.o savedata.o filesystem.o screenshot.o
+OBJS    = main.o memory.o threads.o savedata.o filesystem.o screenshot.o renderer.o
 
-LIBS    = -lSceAppUtil_stub -lSceAppMgr_stub -lSceCtrl_stub -lSceDisplay_stub -lSceFios2_stub -lSceKernel_stub -lScePower_stub -lSceLibc_stub
+LIBS    = -lSceAppUtil_stub -lSceAppMgr_stub -lSceCtrl_stub -lSceDisplay_stub -lSceFios2_stub -lSceLibKernel_stub -lScePower_stub -lSceLibc_stub
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc

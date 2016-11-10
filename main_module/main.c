@@ -31,12 +31,12 @@
 #include <psp2/display.h>
 #include <psp2/kernel/modulemgr.h>
 #include <psp2/kernel/processmgr.h>
-#include "blit.h"
 #include "memory.h"
 #include "threads.h"
 #include "savedata.h"
 #include "filesystem.h"
 #include "screenshot.h"
+#include "renderer.h"
 
 #define MAX_FREEZES 1024 // Max number of freezable offsets
 
@@ -218,16 +218,16 @@ int main_thread(SceSize args, void *argp) {
 		
 		if (started){
 			sceDisplayWaitVblankStart();
-			blit_setup();
-			if (menu_state != CHEATS_LIST) blit_stringf(5, 5, "rinCheat v.0.1 - %s", menus[menu_state]);
-			else blit_stringf(5, 5, "rinCheat v.0.1 - %s (%d available)", menus[menu_state],numCheats);
+			updateFramebuf();
+			if (menu_state != CHEATS_LIST) drawStringF(5, 5, "rinCheat v.0.2 - %s", menus[menu_state]);
+			else drawStringF(5, 5, "rinCheat v.0.1 - %s (%d available)", menus[menu_state],numCheats);
 			int m_idx = 0;
 			int y = 35;
 			if (int_state != old_int_state){ 
-				blit_clearscreen();
+				clearScreen();
 				old_int_state = int_state;
 			}else if (menu_state != old_menu_state){
-				blit_clearscreen();
+				clearScreen();
 				old_menu_state = menu_state;
 			}
 			switch (int_state){
@@ -239,77 +239,77 @@ int main_thread(SceSize args, void *argp) {
 						while (m_idx < num_opt[menu_state]){
 							uint32_t clr = WHITE;
 							if (m_idx == menu_idx) clr = YELLOW;
-							blit_set_color(clr);
+							setTextColor(clr);
 							if (menu_state == HACKS_MENU){
 								switch (m_idx){
 									case 0:
-										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetArmClockFrequency());
+										drawStringF(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetArmClockFrequency());
 										break;
 									case 1:
-										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetBusClockFrequency());
+										drawStringF(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetBusClockFrequency());
 										break;
 									case 2:
-										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuClockFrequency());
+										drawStringF(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuClockFrequency());
 										break;
 									case 3:
-										blit_stringf(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuXbarClockFrequency());
+										drawStringF(5, y, "%s%d", opt[menu_state][m_idx], scePowerGetGpuXbarClockFrequency());
 										break;
 									case 4:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], cfg.suspend ? "On" : "Off");
+										drawStringF(5, y, "%s%s", opt[menu_state][m_idx], cfg.suspend ? "On" : "Off");
 										break;
 									case 5:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], cfg.screenshot ? "On" : "Off");
+										drawStringF(5, y, "%s%s", opt[menu_state][m_idx], cfg.screenshot ? "On" : "Off");
 										break;
 									default:
-										blit_stringf(5, y, opt[menu_state][m_idx]);
+										drawStringF(5, y, opt[menu_state][m_idx]);
 										break;
 								}
 							}else if (menu_state == NET_MENU){
 								switch (m_idx){
 									case 0:
-										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], ftp ? "On - Listening on " : "Off", ftp ? vita_ip : "");
+										drawStringF(5, y, "%s%s%s", opt[menu_state][m_idx], ftp ? "On - Listening on " : "Off", ftp ? vita_ip : "");
 										break;
 									case 1:
-										blit_stringf(5, y, "%s%s%s", opt[menu_state][m_idx], pc_stream ? "On - Listening on " : "Off", pc_stream ? vita_ip : "");
+										drawStringF(5, y, "%s%s%s", opt[menu_state][m_idx], pc_stream ? "On - Listening on " : "Off", pc_stream ? vita_ip : "");
 										break;
 									case 2:
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], opt_qualities[quality_idx]);
+										drawStringF(5, y, "%s%s", opt[menu_state][m_idx], opt_qualities[quality_idx]);
 										break;
 									default:
-										blit_stringf(5, y, opt[menu_state][m_idx]);
+										drawStringF(5, y, opt[menu_state][m_idx]);
 										break;
 								}
 							}else if (menu_state == SAVEDATA_MENU){
 								switch (m_idx){
 									case 0:
-										blit_stringf(5, y, "%s%hhu", opt[menu_state][m_idx], saveslot);
+										drawStringF(5, y, "%s%hhu", opt[menu_state][m_idx], saveslot);
 										break;
 									case 1:
-										blit_set_color(slotstate[saveslot] ? GREEN : RED);
-										blit_stringf(5, y, "%s%s", opt[menu_state][m_idx], slotstate[saveslot] ? "Full" : "Empty");
-										blit_set_color(WHITE);
+										setTextColor(slotstate[saveslot] ? GREEN : RED);
+										drawStringF(5, y, "%s%s", opt[menu_state][m_idx], slotstate[saveslot] ? "Full" : "Empty");
+										setTextColor(WHITE);
 										break;
 									default:
-										blit_stringf(5, y, opt[menu_state][m_idx]);
+										drawStringF(5, y, opt[menu_state][m_idx]);
 										break;
 								}
 							}else if (menu_state == SEARCH_MENU){
 								switch (m_idx){
 									case 0:
-										blit_set_color(WHITE);
-										blit_stringf(5, y, "%s0x%s (%llu)", opt[menu_state][m_idx], &search_val[14-((search_type[search_id]-1)<<1)], dval);
-										blit_set_color(clr);
-										blit_stringf(5, y, "%s", opt[menu_state][m_idx]);
-										blit_stringf(149+16*search_idx, y, "%c", search_val[14-((search_type[search_id]-1)<<1)+search_idx]);
+										setTextColor(WHITE);
+										drawStringF(5, y, "%s0x%s (%llu)", opt[menu_state][m_idx], &search_val[14-((search_type[search_id]-1)<<1)], dval);
+										setTextColor(clr);
+										drawStringF(5, y, "%s", opt[menu_state][m_idx]);
+										drawStringF(113+12*search_idx, y, "%c", search_val[14-((search_type[search_id]-1)<<1)+search_idx]);
 										break;
 									case 1:
-										blit_stringf(5, y, "%s%d Bytes", opt[menu_state][m_idx], search_type[search_id]);
+										drawStringF(5, y, "%s%d Bytes", opt[menu_state][m_idx], search_type[search_id]);
 										break;
 									default:
-										blit_stringf(5, y, opt[menu_state][m_idx]);
+										drawStringF(5, y, opt[menu_state][m_idx]);
 										break;
 								}
-							}else blit_stringf(5, y, opt[menu_state][m_idx]);
+							}else drawStringF(5, y, opt[menu_state][m_idx]);
 							m_idx++;
 							y += 20;
 						}
@@ -322,39 +322,39 @@ int main_thread(SceSize args, void *argp) {
 									clr = YELLOW;
 									sel = cur;
 								}
-								blit_set_color(clr);
-								blit_stringf(5, y, "%s [%s]", cur->name, cur->state == 1 ? "Used" : (cur->state == 2 ? "Enabled" : "Disabled"));
+								setTextColor(clr);
+								drawStringF(5, y, "%s [%s]", cur->name, cur->state == 1 ? "Used" : (cur->state == 2 ? "Enabled" : "Disabled"));
 								y+=20;
 							}
 							m_idx++;
 							cur = cur->next;
 						}
 					}
-					blit_set_color(WHITE);
+					setTextColor(WHITE);
 					
 					// Search menu results
 					if (menu_state == SEARCH_MENU && results_num != -2){
-						if (results_num == 0) blit_stringf(5, 225, "No matches");
-						else blit_stringf(5, 225, "Found %d matches", results_num);
+						if (results_num == 0) drawStringF(5, 225, "No matches");
+						else drawStringF(5, 225, "Found %d matches", results_num);
 					}
 					
 					// Extra features status
 					if (menu_state == MAIN_MENU){
 						if (net_thread != 0){
-							blit_set_color(GREEN);
-							blit_stringf(5, 225, "NET MODULE: running");
+							setTextColor(GREEN);
+							drawStringF(5, 225, "NET MODULE: running");
 						}else{
-							blit_set_color(RED);
-							blit_stringf(5, 225, "NET MODULE: exited");
+							setTextColor(RED);
+							drawStringF(5, 225, "NET MODULE: exited");
 						}
 						if (heap_scanner != -1){
-							blit_set_color(GREEN);
-							blit_stringf(5, 245, "HEAP SCANNER: ready");
+							setTextColor(GREEN);
+							drawStringF(5, 245, "HEAP SCANNER: ready");
 						}else{
-							blit_set_color(RED);
-							blit_stringf(5, 245, "HEAP SCANNER: unavailable");
+							setTextColor(RED);
+							drawStringF(5, 245, "HEAP SCANNER: unavailable");
 						}
-						blit_set_color(WHITE);
+						setTextColor(WHITE);
 					}
 					
 					// Functions
@@ -444,11 +444,11 @@ int main_thread(SceSize args, void *argp) {
 										cfg.gpu_xbar_clock = scePowerGetGpuXbarClockFrequency();
 										break;
 									case 4: // Enable/Disable AutoSuspend Hack
-										blit_clearscreen();
+										clearScreen();
 										cfg.suspend = !cfg.suspend;
 										break;
 									case 5: // Enable/Disable Screenshots Feature
-										blit_clearscreen();
+										clearScreen();
 										cfg.screenshot = !cfg.screenshot;
 										break;
 									case 6: // Return Main Menu
@@ -480,7 +480,7 @@ int main_thread(SceSize args, void *argp) {
 										}
 										break;
 									case 1: // Change Value Size
-										blit_clearscreen();
+										clearScreen();
 										search_id++;
 										if (search_id > 3) search_id = 0;
 										search_idx = (search_type[search_id]<<1)-1;
@@ -547,7 +547,7 @@ int main_thread(SceSize args, void *argp) {
 							case SAVEDATA_MENU:
 								switch (menu_idx){
 									case 0: // Change Selected Saveslot
-										blit_clearscreen();
+										clearScreen();
 										saveslot++;
 										if (saveslot == 10) saveslot = 0;
 										break;
@@ -595,7 +595,7 @@ int main_thread(SceSize args, void *argp) {
 					}else if ((pad.buttons & SCE_CTRL_SQUARE) && (!(oldpad.buttons & SCE_CTRL_SQUARE))){
 						switch (menu_state){
 							case SEARCH_MENU:
-								blit_clearscreen();
+								clearScreen();
 								if (menu_idx == 0){ // Change Selected Byte Value
 									i = search_val[14-((search_type[search_id]-1)<<1)+search_idx]-0x30;
 									if (i > 0){
@@ -648,14 +648,14 @@ int main_thread(SceSize args, void *argp) {
 						if (menu_state == CHEATS_LIST && menu_idx >= numCheats) menu_idx = 0;
 						else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx++;
 						else if (menu_state != CHEATS_LIST && menu_idx >= num_opt[menu_state]) menu_idx = 0;
-						if (menu_state == CHEATS_LIST) blit_clearscreen();
+						if (menu_state == CHEATS_LIST) clearScreen();
 					}else if ((pad.buttons & SCE_CTRL_UP) && (!(oldpad.buttons & SCE_CTRL_UP))){
 						menu_idx--;
 						if (menu_idx < 0){
 							if (menu_state == CHEATS_LIST) menu_idx = numCheats-1;
 							else menu_idx = num_opt[menu_state]-1;
 						}else if (menu_state == SAVEDATA_MENU && menu_idx == 1) menu_idx--;
-						if (menu_state == CHEATS_LIST) blit_clearscreen();
+						if (menu_state == CHEATS_LIST) clearScreen();
 					}else if ((pad.buttons & SCE_CTRL_START) && (!(oldpad.buttons & SCE_CTRL_START))){
 						started = 0;
 						saveTitleSettings(titleid, &cfg);
@@ -663,16 +663,16 @@ int main_thread(SceSize args, void *argp) {
 					}
 					
 					// Plugin State and Target Info Showing
-					blit_stringf(5, hmax-64, "Target info: ");
-					blit_stringf(5, hmax-44, "Title: %s", title);
-					blit_stringf(5, hmax-24, "TitleID: %s", titleid);
-					blit_stringf(pwidth-130, hmax-24, ram_mode ? "RAM Mode" : "MMC Mode");
+					drawStringF(5, hmax-64, "Target info: ");
+					drawStringF(5, hmax-44, "Title: %s", title);
+					drawStringF(5, hmax-24, "TitleID: %s", titleid);
+					drawStringF(pwidth-130, hmax-24, ram_mode ? "RAM Mode" : "MMC Mode");
 					
 					break;
 					
 				case STACK_DUMP:	
 				
-					blit_stringf(5, 35, "Dumping stack, please wait");
+					drawStringF(5, 35, "Dumping stack, please wait");
 					int fd = sceIoOpen("ux0:/data/rinCheat/stack.bin", SCE_O_WRONLY | SCE_O_CREAT,0777);
 					sceIoWrite(fd, status.stack, status.stackSize);
 					sceIoClose(fd);
@@ -681,21 +681,21 @@ int main_thread(SceSize args, void *argp) {
 					
 				case DO_ABS_SEARCH:	
 				
-					blit_stringf(5, 35, "Scanning stack, please wait");
+					drawStringF(5, 35, "Scanning stack, please wait");
 					results_num = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
 					int_state = MENU;
 					break;
 					
 				case DO_REL_SEARCH:	
 				
-					blit_stringf(5, 35, "Scanning stack, please wait");
+					drawStringF(5, 35, "Scanning stack, please wait");
 					scanResults(dval,search_type[search_id]);
 					int_state = MENU;
 					break;
 					
 				case INJECT_MEMORY:
 				
-					blit_stringf(5, 35, "Injecting memory, please wait");
+					drawStringF(5, 35, "Injecting memory, please wait");
 					sscanf(search_val,"%llX",&val);
 					switch (search_type[search_id]){
 						case 1:
@@ -715,7 +715,7 @@ int main_thread(SceSize args, void *argp) {
 					
 				case SAVE_OFFSETS:
 				
-					blit_stringf(5, 35, "Saving offsets, please wait");
+					drawStringF(5, 35, "Saving offsets, please wait");
 					char offs_file[128];
 					sprintf(offs_file,"ux0:/data/rinCheat/db/%s_offsets.txt", titleid);
 					saveOffsets(offs_file);
@@ -726,7 +726,7 @@ int main_thread(SceSize args, void *argp) {
 					
 					sel->state = (sel->state ? 0 : 1);
 					if (sel->state){
-						blit_stringf(5, 35, "Applying cheat, please wait");
+						drawStringF(5, 35, "Applying cheat, please wait");
 						injectValue((uint8_t*)sel->offset, sel->val, sel->size);
 					}
 					int_state = MENU;
@@ -737,7 +737,7 @@ int main_thread(SceSize args, void *argp) {
 					sel->state = ((sel->state == 2) ? 0 : 2);
 					int freeze_i = 0;
 					if (sel->state){
-						blit_stringf(5, 35, "Applying cheat, please wait");
+						drawStringF(5, 35, "Applying cheat, please wait");
 						injectValue((uint8_t*)sel->offset, sel->val, sel->size);
 						while (freeze_list[freeze_i]){
 							if (freeze_i < MAX_FREEZES) freeze_i += 3;
@@ -772,7 +772,7 @@ int main_thread(SceSize args, void *argp) {
 					
 				case EXPORT_SAVEDATA:
 					
-					blit_stringf(5, 35, "Exporting savedata, please wait");
+					drawStringF(5, 35, "Exporting savedata, please wait");
 					sprintf(temp,"ux0:/data/savegames/%s/SLOT%hhu", titleid, saveslot);
 					dumpSavedataDir("savedata0:",temp);
 					slotstate[saveslot] = isDirectoryEmpty(temp);
@@ -781,7 +781,7 @@ int main_thread(SceSize args, void *argp) {
 					
 				case IMPORT_SAVEDATA:
 					
-					blit_stringf(5, 35, "Importing savedata, please wait");
+					drawStringF(5, 35, "Importing savedata, please wait");
 					sprintf(temp,"ux0:/data/savegames/%s/SLOT%hhu", titleid, saveslot);
 					restoreSavedataDir(temp, NULL);
 					int_state = MENU;
@@ -789,13 +789,13 @@ int main_thread(SceSize args, void *argp) {
 					
 				case STACK_RESTORE:
 					
-					blit_stringf(5, 35, "Importing stack file, please wait");
+					drawStringF(5, 35, "Importing stack file, please wait");
 					injectStackFile(status.stack,status.stackSize,"ux0:/data/rinCheat/stack.bin");
 					break;
 					
 				case DO_ABS_SEARCH_EXT:
 				
-					blit_stringf(5, 35, "Scanning memory, please wait");
+					drawStringF(5, 35, "Scanning memory, please wait");
 					results_num = scanStack(status.stack,status.stackSize,dval,search_type[search_id]);
 					if (heap_scanner == 0) results_num += scanHeap(dval, search_type[search_id]);
 					int_state = MENU;
@@ -803,7 +803,7 @@ int main_thread(SceSize args, void *argp) {
 					
 				case FTP_COMMUNICATION:
 					
-					blit_stringf(5, 35, "Sending request to net module, please wait");
+					drawStringF(5, 35, "Sending request to net module, please wait");
 					ftp = !ftp;
 					sendNetRequest(FTP_SWITCH);
 					tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_RDONLY, 0777);
@@ -815,7 +815,7 @@ int main_thread(SceSize args, void *argp) {
 					
 				case STREAM_COMMUNICATION:
 				
-					blit_stringf(5, 35, "Sending request to net module, please wait");
+					drawStringF(5, 35, "Sending request to net module, please wait");
 					pc_stream = !pc_stream;
 					sendNetRequest(STREAM_SWITCH);
 					tmp = sceIoOpen("ux0:/data/rinCheat/ip.txt", SCE_O_RDONLY, 0777);
@@ -827,7 +827,7 @@ int main_thread(SceSize args, void *argp) {
 					
 				case CHANGE_STREAM_QUALITY:
 					
-					blit_stringf(5, 35, "Sending request to net module, please wait");
+					drawStringF(5, 35, "Sending request to net module, please wait");
 					sendNetRequest(SET_LOWEST_QUALITY + quality_idx);
 					int_state = MENU;
 					break;
@@ -838,7 +838,7 @@ int main_thread(SceSize args, void *argp) {
 				started = 1;
 				menu_state = MAIN_MENU;
 				menu_idx = 0;
-				blit_clearscreen();
+				clearScreen();
 				heap_scanner = checkHeap();
 				net_thread = checkNetModule();
 				if (!setup){
