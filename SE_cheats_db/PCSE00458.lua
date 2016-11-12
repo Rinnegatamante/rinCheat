@@ -3,6 +3,8 @@
 
 needs_crc32 = false
 
+warning = "In order to fully use the cheats, you must use the 'Min Current Upgrade Points' for the character you want to edit."
+
 cur_chts = {
 	{["name"]="Mikoto Max Level", ["offset"]=0x44, ["file"]="config.dat", ["value"]=0xFFFF, ["size"]=2},
 	{["name"]="Mikoto Min Current Upgrade Points", ["offset"]=0x48, ["file"]="config.dat", ["value"]=0x01, ["size"]=1},

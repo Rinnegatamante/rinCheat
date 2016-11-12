@@ -1,0 +1,12 @@
+#Slot 1 x50 (English Lang)
+@0x84FCE2AA @1 @50
+#Slot 2 x50 (English Lang)
+@0x84FCE2AE @1 @50
+#Slot 3 x50 (English Lang)
+@0x84FCE2B2 @1 @50
+#Slot 4 x50 (English Lang)
+@0x84FCE2B6 @1 @50
+#Slot 5 x50 (English Lang)
+@0x84FCE2BA @1 @50
+#Slot 6 x50 (English Lang)
+@0x84FCE2BE @1 @50
