@@ -191,24 +191,29 @@ end
 
 -- Check for updates availability
 function checkUpdates()
-	getRemoteVersion()
-	if System.doesFileExist("ux0:/data/rinCheat/VERSION.lua") then
-		dofile("ux0:/data/rinCheat/VERSION.lua")
-		if locale_ver == "DEBUG" then
-			return false
-		end
-		dofile("ux0:/data/rinCheat/remote.lua")
-		if remote_ver ~= locale_ver then
-			System.deleteFile("ux0:/data/rinCheat/VERSION.lua")
+	if Network.isWifiEnabled() then
+		getRemoteVersion()
+		if System.doesFileExist("ux0:/data/rinCheat/VERSION.lua") then
+			dofile("ux0:/data/rinCheat/VERSION.lua")
+			if locale_ver == "DEBUG" then
+				System.deleteFile("ux0:/data/rinCheat/remote.lua")
+				return false
+			end
+			dofile("ux0:/data/rinCheat/remote.lua")
+			if remote_ver ~= locale_ver and remote_ver ~= "" then
+				System.deleteFile("ux0:/data/rinCheat/VERSION.lua")
+				localizeVersion()
+				return true
+			else
+				System.deleteFile("ux0:/data/rinCheat/remote.lua")
+				return false
+			end
+		else
 			localizeVersion()
 			return true
-		else
-			System.deleteFile("ux0:/data/rinCheat/remote.lua")
-			return false
 		end
 	else
-		localizeVersion()
-		return true
+		return false
 	end
 end
 
@@ -310,6 +315,25 @@ function showWarning(text)
 	end
 end
 
+-- Convert a 32 bit binary string to a integer
+function bin2int(str)
+	local b1, b2, b3, b4 = string.byte(str, 1, 4)
+	return (b4 << 24) + (b3 << 16) + (b2 << 8) + b1
+end
+
+-- Extracts title name from an SFO file descriptor
+function extractTitle(handle)
+	io.seek(handle, 0x0C, SET)
+	local data_offs = bin2int(io.read(handle, 4))
+	local title_idx = bin2int(io.read(handle, 4)) - 3 -- STITLE seems to be always the MAX-3 entry
+	io.seek(handle, (title_idx << 4) + 0x04, CUR)
+	local len = bin2int(io.read(handle, 4))
+	local dummy = io.read(handle, 4)
+	local offs = bin2int(io.read(handle, 4))
+	io.seek(handle, data_offs + offs, SET)
+	return io.read(handle, len)
+end
+
 -- Scanning savegames folder
 local slots = {}
 local files = System.listDirectory("ux0:/data/savegames")
@@ -320,7 +344,15 @@ for i, entry in pairs(files) do
 		for i, slot in pairs(slots) do
 			local slot_files = System.listDirectory("ux0:/data/savegames/"..entry.name.."/"..slot.name)
 			if #slot_files > 0 then
-				table.insert(savedatas, {["name"]=string.sub(entry.name,1,9)})
+				titleid = string.sub(entry.name,1,9)
+				if System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
+					fd = io.open("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", FREAD)
+					name = "[" .. titleid .. "] " .. extractTitle(fd)
+					io.close(fd)
+				else
+					name = "[" .. titleid .. "] Unknown Game"
+				end
+				table.insert(savedatas, {["name"]=name,["titleid"]=titleid})
 				break
 			end
 		end
@@ -376,14 +408,23 @@ while true do
 	if mode == 0 then
 		renderMenu(savedatas, svdt_idx, "Select game savedata to modify", "No savedata found.")		
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
-			populateCheatsTable(savedatas[svdt_idx].name)
+			populateCheatsTable(savedatas[svdt_idx].titleid)
 			if warning ~= nil then
 				showWarning(warning)
 			end
 			mode = 1
 			cur_svdt = savedatas[svdt_idx]
+			slots = {} -- Resetting slots table before generating it
+			local slt_idx = 0
+			while slt_idx <= 9 do
+				local test_dir = System.listDirectory("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slt_idx)
+				if #test_dir > 0 then
+					table.insert(slots,{["name"] = "Slot " .. slt_idx, ["idx"] = slt_idx})
+				end
+				slt_idx = slt_idx + 1
+			end
 			st_draw = 1
-			cht_idx = 1
+			slt_menu_idx = 1
 		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
 			svdt_idx = svdt_idx - 1
 			if svdt_idx < 1 then
@@ -406,22 +447,47 @@ while true do
 			end
 		end
 		
-	-- Cheat selection
+	-- Slot selection
 	elseif mode == 1 then
+		renderMenu(slots, slt_menu_idx, "Select savegame slot where to apply", "No compatible savegame detected.")
+		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
+			if #slots > 0 then
+				mode = 2
+				to_apply = slots[slt_menu_idx].idx
+				st_draw = 1
+				cht_idx = 1
+			end
+		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
+			slt_menu_idx = slt_menu_idx - 1
+			if slt_menu_idx < 1 then
+				slt_menu_idx = #slots
+			end
+			if slt_menu_idx > 25 then
+				st_draw = slt_menu_idx - 24
+			else
+				st_draw = 1
+			end
+		elseif Controls.check(pad, SCE_CTRL_DOWN) and not Controls.check(oldpad, SCE_CTRL_DOWN) then
+			slt_menu_idx = slt_menu_idx + 1
+			if slt_menu_idx > #slots then
+				slt_menu_idx = 1
+			end
+			if slt_menu_idx > 25 then
+				st_draw = slt_menu_idx - 24
+			else
+				st_draw = 1
+			end
+		elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) then
+			mode = 0
+			st_draw = svdt_idx - 25
+		end
+		
+	-- Cheat selection
+	elseif mode == 2 then
 		renderMenu(cur_chts, cht_idx, "Select cheat to apply", "No cheats found.")
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
 			if #cur_chts > 0 then
-				mode = 2
-				slots = {} -- Resetting slots table before generating it
-				local slt_idx = 0
-				while slt_idx <= 9 do
-					if System.doesFileExist("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slt_idx.."/"..cur_chts[cht_idx].file) then
-						table.insert(slots,{["name"] = "Slot " .. slt_idx, ["idx"] = slt_idx})
-					end
-					slt_idx = slt_idx + 1
-				end
-				st_draw = 1
-				slt_menu_idx = 1
+				mode = 3			
 			end
 		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
 			cht_idx = cht_idx - 1
@@ -444,47 +510,18 @@ while true do
 				st_draw = 1
 			end
 		elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) then
-			mode = 0
-			st_draw = svdt_idx - 25
-		end
-	
-	-- Slot selection
-	elseif mode == 2 then
-		renderMenu(slots, slt_menu_idx, "Select savegame slot where to apply", "No compatible savegame detected.")
-		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
-			mode = 3
-			to_apply = slots[slt_menu_idx].idx		
-		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
-			slt_menu_idx = slt_menu_idx - 1
-			if slt_menu_idx < 1 then
-				slt_menu_idx = #slots
-			end
-			if slt_menu_idx > 25 then
-				st_draw = slt_menu_idx - 24
-			else
-				st_draw = 1
-			end
-		elseif Controls.check(pad, SCE_CTRL_DOWN) and not Controls.check(oldpad, SCE_CTRL_DOWN) then
-			slt_menu_idx = slt_menu_idx + 1
-			if slt_menu_idx > #slots then
-				slt_menu_idx = 1
-			end
-			if slt_menu_idx > 25 then
-				st_draw = slt_menu_idx - 24
-			else
-				st_draw = 1
-			end
-		elseif Controls.check(pad, SCE_CTRL_TRIANGLE) and not Controls.check(oldpad, SCE_CTRL_TRIANGLE) then
 			mode = 1
-			st_draw = cht_idx - 25
+			st_draw = slt_menu_idx - 25
 		end
 		
 	-- Cheat application
 	elseif mode == 3 then
 		if to_apply >= 0 then
-			handle = io.open("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FRDWR)
-			io.seek(handle, cur_chts[cht_idx].offset, SET)
-			io.write(handle, int2str(cur_chts[cht_idx].value,cur_chts[cht_idx].size), cur_chts[cht_idx].size)
+			handle = io.open("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FRDWR)
+			for i, offs in pairs(cur_chts[cht_idx].offsets) do
+				io.seek(handle, offs, SET)
+				io.write(handle, int2str(cur_chts[cht_idx].value,cur_chts[cht_idx].size), cur_chts[cht_idx].size)
+			end
 			
 			-- Applying CRC32 patch if needed
 			if needs_crc32 then
@@ -493,8 +530,8 @@ while true do
 				save_buffer = io.read(handle, save_size)
 				patched_crc = crc32(save_buffer)
 				io.close(handle)
-				System.deleteFile("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file)
-				handle = io.open("ux0:/data/savegames/"..cur_svdt.name.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FCREATE)
+				System.deleteFile("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file)
+				handle = io.open("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FCREATE)
 				io.write(handle, int2str(patched_crc, 4), 4)
 				io.write(handle, save_buffer, string.len(save_buffer))
 				io.close(handle)
@@ -506,7 +543,8 @@ while true do
 		end
 		renderMenu({}, 0, "Cheat application", "Done! Press Cross to return to the cheats list.") -- Fake menu
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
-			mode = 1
+			mode = 2
+			to_apply = slots[slt_menu_idx].idx
 		end
 	end
 	Screen.flip()
