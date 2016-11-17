@@ -3,6 +3,8 @@
 
 needs_crc32 = false
 
+warning =  nil
+
 cur_chts = {
-    {["name"]="Max Money", ["offsets"]={0x00B18}, ["file"]="data0000_0.bin", ["value"]=0x98967F, ["size"]=8}
+	{["name"]="Max Money", ["offsets"]={0x00B18}, ["file"]="data0000_0.bin", ["value"]=0x98967F, ["size"]=4}
 }

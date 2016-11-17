@@ -1,7 +1,9 @@
-﻿-- Dead Nation (AUS)
+-- Dead Nation (AUS)
 -- Credits: Slade
 
 needs_crc32 = false
+
+warning = "Unlock cheats will make an item visible, but not purchasable. Both halves of the cheats will need to be run for two part cheats to enable them correctly."
 
 cur_chts = {
 	{["name"]="9,999,999 Cash", ["offsets"]={0x6A47}, ["file"]="SAVE.DAT", ["value"]=0x98967F, ["size"]=4},

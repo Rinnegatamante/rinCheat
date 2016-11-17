@@ -3,6 +3,8 @@
 
 needs_crc32 = false
 
+warning =  nil
+
 cur_chts = {
 	{["name"]="9999999 Money ", ["offsets"]={0x34}, ["file"]="app000.dat", ["value"]=0x7F969800, ["size"]=4},
 	{["name"]="x999 Item 1 ", ["offsets"]={0x35CA0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
@@ -14,7 +16,7 @@ cur_chts = {
 	{["name"]="x999 Item 7 ", ["offsets"]={0x35DC0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 8 ", ["offsets"]={0x35DF0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 9 ", ["offsets"]={0x35E20}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
-	{["name"]="x999 Item 10 ", ["offsets"]={0x35E50}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2}
+	{["name"]="x999 Item 10 ", ["offsets"]={0x35E50}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 11 ", ["offsets"]={0x35E80}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 12 ", ["offsets"]={0x35EB0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 13 ", ["offsets"]={0x35EE0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
@@ -85,5 +87,5 @@ cur_chts = {
 	{["name"]="x999 Item 78 ", ["offsets"]={0x36B10}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 79 ", ["offsets"]={0x36B40}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
 	{["name"]="x999 Item 80 ", ["offsets"]={0x36B70}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
-	{["name"]="x999 Item 81 ", ["offsets"]={0x36BA0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2},
+	{["name"]="x999 Item 81 ", ["offsets"]={0x36BA0}, ["file"]="app000.dat", ["value"]=0xE703, ["size"]=2}
 }

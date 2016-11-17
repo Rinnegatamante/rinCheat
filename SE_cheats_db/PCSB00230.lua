@@ -1,4 +1,4 @@
--- Let’s Fish ! Hooked On (EUR)
+-- Letâ€™s Fish ! Hooked On (EUR)
 -- Credits: Slade
 
 needs_crc32 = false
