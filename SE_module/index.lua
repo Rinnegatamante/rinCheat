@@ -29,6 +29,12 @@ local slt_menu_idx = 1
 local to_apply = false
 local updates_checked = false
 
+-- Creating needed folders if they don't exist
+System.createDirectory("ux0:/data/savegames")
+System.createDirectory("ux0:/data/rinCheat")
+System.createDirectory("ux0:/data/rinCheat/SE_db")
+System.createDirectory("ux0:/data/rinCheat/db")
+
 -- Formats bytes size
 function formatSize(bytes)
 	if bytes > 1048576 then
@@ -131,7 +137,7 @@ function updateDatabase()
 end
 
 -- Get GIT version
-function getRemoteVersion()
+function getRemoteVersion(offline_ver)
 	local timeout = Timer.new()
 	local state = 0
 	local raw_data = ""
@@ -141,7 +147,12 @@ function getRemoteVersion()
 	while true do
 		if state == 0 then -- Connecting to the server
 			skt = Socket.connect("rinnegatamante.it",80)
-			payload = "GET /rinCheat_check.php HTTP/1.1\r\nHost: rinnegatamante.it\r\n\r\n"
+			if offline_ver then
+				payload = "GET /rinCheat_offline.php"
+			else
+				payload = "GET /rinCheat_check.php"
+			end
+			payload = payload .. " HTTP/1.1\r\nHost: rinnegatamante.it\r\n\r\n"
 			Socket.send(skt, payload)
 			state = 1
 		elseif state == 1 then -- Waiting server response
@@ -192,7 +203,7 @@ end
 -- Check for updates availability
 function checkUpdates()
 	if Network.isWifiEnabled() then
-		getRemoteVersion()
+		getRemoteVersion(false)
 		if System.doesFileExist("ux0:/data/rinCheat/VERSION.lua") then
 			dofile("ux0:/data/rinCheat/VERSION.lua")
 			if locale_ver == "DEBUG" then
@@ -200,7 +211,11 @@ function checkUpdates()
 				return false
 			end
 			dofile("ux0:/data/rinCheat/remote.lua")
-			if remote_ver ~= locale_ver and remote_ver ~= "" then
+			if remote_ver == "" then
+				getRemoteVersion(true)
+				dofile("ux0:/data/rinCheat/remote.lua")
+			end
+			if remote_ver ~= locale_ver then
 				System.deleteFile("ux0:/data/rinCheat/VERSION.lua")
 				localizeVersion()
 				return true
@@ -209,6 +224,10 @@ function checkUpdates()
 				return false
 			end
 		else
+			dofile("ux0:/data/rinCheat/remote.lua")
+			if remote_ver == "" then
+				getRemoteVersion(true)
+			end
 			localizeVersion()
 			return true
 		end
