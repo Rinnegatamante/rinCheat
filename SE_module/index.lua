@@ -426,7 +426,7 @@ while true do
 	-- Savedata selection
 	if mode == 0 then
 		renderMenu(savedatas, svdt_idx, "Select game savedata to modify", "No savedata found.")		
-		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
+		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and #savedatas > 0 then
 			populateCheatsTable(savedatas[svdt_idx].titleid)
 			if warning ~= nil then
 				showWarning(warning)
@@ -437,7 +437,7 @@ while true do
 			local slt_idx = 0
 			while slt_idx <= 9 do
 				local test_dir = System.listDirectory("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slt_idx)
-				if #test_dir > 0 then
+				if test_dir ~= nil then
 					table.insert(slots,{["name"] = "Slot " .. slt_idx, ["idx"] = slt_idx})
 				end
 				slt_idx = slt_idx + 1
@@ -553,11 +553,9 @@ while true do
 				handle = io.open("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FCREATE)
 				io.write(handle, int2str(patched_crc, 4), 4)
 				io.write(handle, save_buffer, string.len(save_buffer))
-				io.close(handle)
-			else
-				io.close(handle)
 			end
 			
+			io.close(handle)		
 			to_apply = -1
 		end
 		renderMenu({}, 0, "Cheat application", "Done! Press Cross to return to the cheats list.") -- Fake menu
