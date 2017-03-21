@@ -26,4 +26,4 @@ void drawString(int x, int y, const char *str);
 void drawStringF(int x, int y, const char *format, ...);
 void setTextColor(uint32_t clr);
 
-#endif _RENDERER_H_
+#endif

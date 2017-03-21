@@ -16,7 +16,7 @@
 --
 
 -- Internal stuffs
-local VERSION = "1.0"
+local VERSION = "1.0.1"
 local yellow = Color.new(255,255,0)
 local white = Color.new(255,255,255)
 local cyan = Color.new(0,255,255)
@@ -340,17 +340,10 @@ function bin2int(str)
 	return (b4 << 24) + (b3 << 16) + (b2 << 8) + b1
 end
 
--- Extracts title name from an SFO file descriptor
-function extractTitle(handle)
-	io.seek(handle, 0x0C, SET)
-	local data_offs = bin2int(io.read(handle, 4))
-	local title_idx = bin2int(io.read(handle, 4)) - 3 -- STITLE seems to be always the MAX-3 entry
-	io.seek(handle, (title_idx << 4) + 0x04, CUR)
-	local len = bin2int(io.read(handle, 4))
-	local dummy = io.read(handle, 4)
-	local offs = bin2int(io.read(handle, 4))
-	io.seek(handle, data_offs + offs, SET)
-	return io.read(handle, len)
+-- Extracts title name from an SFO file
+function extractTitle(file)
+	local data = System.extractSFO(file)
+	return data.title
 end
 
 -- Scanning savegames folder
@@ -362,12 +355,10 @@ for i, entry in pairs(files) do
 		local slots = System.listDirectory("ux0:/data/savegames/"..entry.name)
 		for i, slot in pairs(slots) do
 			local slot_files = System.listDirectory("ux0:/data/savegames/"..entry.name.."/"..slot.name)
-			if #slot_files > 0 then
+			if slot_files ~= nil and #slot_files > 0 then
 				titleid = string.sub(entry.name,1,9)
 				if System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
-					fd = io.open("ux0:/app/" .. titleid .. "/sce_sys/param.sfo", FREAD)
-					name = "[" .. titleid .. "] " .. extractTitle(fd)
-					io.close(fd)
+					name = "[" .. titleid .. "] " .. extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo")
 				else
 					name = "[" .. titleid .. "] Unknown Game"
 				end
