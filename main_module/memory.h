@@ -21,7 +21,9 @@
 
 extern int results_num;
 extern int ram_mode;
+extern uint8_t* FREEZE_LIST_OFFS;
 
+#define MAX_FREEZES 1024 // Max number of freezable offsets
 #define CHUNK_SIZE 0x80000 // Size of temporary chunks used in MMC mode
 
 int checkHeap();
@@ -33,5 +35,6 @@ void injectValue(uint8_t* offset, uint64_t val, int val_size);
 void injectStackFile(void* stack_ptr, int stack_size, char* file);
 void injectMemory(uint64_t val, int val_size);
 void saveOffsets(char* filename);
+void freezeMemory(uint64_t val, int val_size);
 
 #endif

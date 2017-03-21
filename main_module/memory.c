@@ -25,6 +25,7 @@
 #include "memory.h"
 int results_num = -2;
 int ram_mode = 0;
+uint8_t* FREEZE_LIST_OFFS = NULL;
 
 // Use this only to get disassembly with crashes on vita-parse-core since it's not ARM-optimized
 int memcmp_debug(void* mem1, void* mem2, uint8_t size){
@@ -53,7 +54,10 @@ int memcmp_debug(void* mem1, void* mem2, uint8_t size){
 			byte8 = ((uint64_t*)mem1)[0];
 			byte8_2 = ((uint64_t*)mem2)[0];
 			return (byte8 == byte8_2) ? 0 : -1;
-			break;			
+			break;
+		default:
+			return 0;
+			break;
 	};
 }
 
@@ -156,6 +160,30 @@ void injectMemory(uint64_t val, int val_size){
 	int i = 0;
 	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < results_num){
 		injectValue((uint8_t*)addr,val,val_size);
+	}
+	sceIoClose(results_fd);
+}
+
+// Inject multiple values on memory and freeze them (MMC storage)
+void freezeMemory(uint64_t val, int val_size){
+	int results_fd  = sceIoOpen("ux0:/data/rinCheat/rinCheat_temp.bin", SCE_O_RDONLY | SCE_O_CREAT, 0777);
+	sceIoLseek(results_fd, 0x0, SEEK_SET);
+	uint32_t addr;
+	int i = 0;
+	int freeze_i = 0;
+	uint64_t* freeze_list = (uint64_t*)FREEZE_LIST_OFFS;
+	while (freeze_list[freeze_i]){
+		if (freeze_i < MAX_FREEZES) freeze_i += 3;
+		else break;
+	}
+	while (sceIoRead(results_fd, &addr, 4) > 0 && i++ < results_num){
+		injectValue((uint8_t*)addr,val,val_size);
+		if (freeze_i < MAX_FREEZES){
+			freeze_list[freeze_i] = addr;
+			freeze_list[freeze_i+1] = val;
+			freeze_list[freeze_i+2] = val_size;
+			freeze_i += 3;
+		}
 	}
 	sceIoClose(results_fd);
 }

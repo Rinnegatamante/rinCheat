@@ -38,8 +38,6 @@
 #include "screenshot.h"
 #include "renderer.h"
 
-#define MAX_FREEZES 1024 // Max number of freezable offsets
-
 // Menu states
 enum{
 	MAIN_MENU = 0,
@@ -67,7 +65,8 @@ enum{
 	FTP_COMMUNICATION,
 	STREAM_COMMUNICATION,
 	CHANGE_STREAM_QUALITY,
-	FREEZE_CHEAT
+	FREEZE_CHEAT,
+	FREEZE_MEMORY
 };
 
 // Requests type for net module
@@ -108,6 +107,7 @@ int main_thread(SceSize args, void *argp) {
 	// Internal stuffs
 	uint64_t freeze_list[MAX_FREEZES*3]; // 1024 freezable entries
 	memset(&freeze_list[0], 0, (MAX_FREEZES*3)<<3);
+	FREEZE_LIST_OFFS = (uint8_t*)freeze_list;
 	uint8_t saveslot = 0;
 	int hmax, pwidth, pheight;
 	int started = 0;
@@ -192,12 +192,12 @@ int main_thread(SceSize args, void *argp) {
 	char* opt_main[] = {"Game Cheats","Game Hacks","Net Module","Manage Savedatas"};
 	char* opt_cheats[] = {"Cheats List","Search for value", "Dump stack to ux0:/data/rinCheat/stack.bin", "Inject stack from ux0:/data/rinCheat/stack.bin", "Return Main Menu"};
 	char* opt_hacks[] = {"CPU Clock: ","BUS Clock: ","GPU Clock: ", "GPU Crossbar Clock: ", "Auto-Suspend: ", "Screenshot Feature: ","Return Main Menu"};
-	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Save offsets","Return Cheats Menu"};
+	char* opt_search[] = {"Value: ","Type: ","Start Absolute Search on Stack","Start Absolute Search on Stack and Heap (Experimental)","Start Relative Search","Inject Value","Freeze Value","Save offsets","Return Cheats Menu"};
 	char* opt_net[] = {"FTP State: ", "Stream Screen to PC: ", "Screen Stream Video Quality: ", "Return Main Menu"};
 	char* opt_qualities[] = {"Lowest", "Low", "Normal", "High", "Best"};
 	char* opt_savedata[] = {"Current Slot: ", "State: ", "Import decrypted savedata", "Export decrypted savedata", "Return Main Menu"};
 	char** opt[] = {opt_main, opt_cheats, opt_hacks, opt_search, opt_net, opt_savedata};
-	int num_opt[] = {4, 5, 7, 8, 4, 5};
+	int num_opt[] = {4, 5, 7, 9, 4, 5};
 	
 	// Main loop
 	for (;;){
@@ -220,7 +220,7 @@ int main_thread(SceSize args, void *argp) {
 			sceDisplayWaitVblankStart();
 			updateFramebuf();
 			if (menu_state != CHEATS_LIST) drawStringF(5, 5, "rinCheat v.0.2 - %s", menus[menu_state]);
-			else drawStringF(5, 5, "rinCheat v.0.1 - %s (%d available)", menus[menu_state],numCheats);
+			else drawStringF(5, 5, "rinCheat v.0.2 - %s (%d available)", menus[menu_state],numCheats);
 			int m_idx = 0;
 			int y = 35;
 			if (int_state != old_int_state){ 
@@ -514,12 +514,16 @@ int main_thread(SceSize args, void *argp) {
 											int_state = INJECT_MEMORY;
 										}
 										break;
-									case 6: // Save found offsets
+									case 6: // Freeze new value
+										if (results_num != -2){
+											int_state = FREEZE_MEMORY;
+										}
+									case 7: // Save found offsets
 										if (results_num != -2){
 											int_state = SAVE_OFFSETS;
 										}
 										break;
-									case 7: // Return Cheats Menu
+									case 8: // Return Cheats Menu
 										menu_idx = 1;
 										menu_state = CHEATS_MENU;
 										break;
@@ -767,6 +771,26 @@ int main_thread(SceSize args, void *argp) {
 							memmove(dst_addr, src_addr, (uint32_t)&freeze_list[freeze_i] - (uint32_t)src_addr);
 						}
 					}
+					int_state = MENU;
+					break;
+					
+				case FREEZE_MEMORY:
+					
+					drawStringF(5, 35, "Freezing value, please wait");
+					sscanf(search_val,"%llX",&val);
+					switch (search_type[search_id]){
+						case 1:
+							val = (val<<56)>>56;
+							break;
+						case 2:
+							val = (val<<48)>>48;
+							break;
+						case 4:
+							val = (val<<32)>>32;
+						case 8:
+							break;
+					}
+					freezeMemory(val, search_type[search_id]);
 					int_state = MENU;
 					break;
 					
