@@ -6,12 +6,6 @@ A multifunction plugin for PSVITA.
 
 THIS TOOL HAS BEEN RELEASED JUST FOR TESTING PURPOSES. THIS IS NOT FINISHED AND THERE STILL ARE LOTS OF BUGS TO BE SOLVED. REPORT ON WOLOLO'S THREAD WHATEVER BUG YOU FIND IF YOU WANT TO CONTRIBUTE TO ITS DEVELOPMENT.
 
-## Warning for developers, read carefully
-
-This sourcecode has been released without a license.<br>
-Since i'm the owner of this repository, whenever someone will release something using part or totality of this code without asking me for authorization, i'll INSTANTLY close source this project.<br>
-I also expect no one bitching me if this happens cause, in that case, I can also consider to just drop the project too.
-
 ## Features
 
 - Realtime cheats with cheats database support.
