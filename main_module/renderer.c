@@ -59,12 +59,11 @@ void drawCharacter(int character, int x, int y){
         uint8_t charPos = font[character * 10 + yy];
         for (int xx = 7; xx >= 2; xx--) {
 			uint32_t clr = ((charPos >> xx) & 1) ? color : 0x00000000;
-            *(screenPos) = clr;
+			*(screenPos) = clr;
 			*(screenPos+1) = clr;
 			*(screenPos+bufferwidth) = clr;
-			*(screenPos+bufferwidth+1) = clr;
-			
-            screenPos += 2;
+			*(screenPos+bufferwidth+1) = clr;			
+			screenPos += 2;
         }
     }
 }
