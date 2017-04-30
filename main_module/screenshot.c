@@ -55,7 +55,7 @@ void takeScreenshot(char* titleid){
 		i = 0;
 		uint32_t* buffer = (uint32_t*)bmp_content;
 		uint32_t* framebuf = (uint32_t*)param.base;
-		for (y = 0; y<param.height; y++){
+		for (y = 1; y<param.height; y++){
 			for (x = 0; x<param.pitch; x++){
 				buffer[i] = framebuf[x+(param.height-y)*param.pitch];
 				uint8_t* clr = (uint8_t*)&buffer[i];
@@ -77,9 +77,9 @@ void takeScreenshot(char* titleid){
 		int x, y;
 		uint32_t* buffer = (uint32_t*)bmp_content;
 		uint32_t* framebuf = (uint32_t*)param.base;
-		for (y = 0; y<param.height; y++){
+		for (y = 1; y<=param.height; y++){
 			for (x = 0; x<param.pitch; x++){
-				buffer[x+y*param.pitch+0x36] = framebuf[x+(param.height-y-1)*param.pitch];
+				buffer[x+y*param.pitch+0x36] = framebuf[x+(param.height-y)*param.pitch];
 				uint8_t* clr = (uint8_t*)&buffer[x+y*param.pitch+0x36];
 				uint8_t r = clr[1];
 				clr[1] = clr[3];
