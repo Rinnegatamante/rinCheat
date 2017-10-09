@@ -16,13 +16,13 @@
 --
 
 -- Internal stuffs
-local VERSION = "1.0.1"
+local VERSION = "1.1"
 local yellow = Color.new(255,255,0)
 local white = Color.new(255,255,255)
 local cyan = Color.new(0,255,255)
 local black = Color.new(0,0,0)
 local grey = Color.new(40, 40, 40)
-local mode = 0 -- 0 = Savedata select, 1 = Cheat select, 2 = Slot select, 3 = Cheat apply
+local mode = -1 -- -1 = Partition select, 0 = Savedata select, 1 = Cheat select, 2 = Slot select, 3 = Cheat apply
 local cur_svdt = nil
 local cht_idx = 1
 local slt_menu_idx = 1
@@ -30,7 +30,6 @@ local to_apply = false
 local updates_checked = false
 
 -- Creating needed folders if they don't exist
-System.createDirectory("ux0:/data/savegames")
 System.createDirectory("ux0:/data/rinCheat")
 System.createDirectory("ux0:/data/rinCheat/SE_db")
 System.createDirectory("ux0:/data/rinCheat/db")
@@ -38,9 +37,9 @@ System.createDirectory("ux0:/data/rinCheat/db")
 -- Formats bytes size
 function formatSize(bytes)
 	if bytes > 1048576 then
-		return (bytes>>20) .. " MB"
+		return (bit32.rshift(bytes,20)) .. " MB"
 	elseif bytes > 1024 then
-		return (bytes>>10) .. " KB"
+		return (bit32.rshift(bytes,10)) .. " KB"
 	else
 		return bytes .. " B"
 	end
@@ -60,15 +59,19 @@ local function deleteDirectory(dir)
 end
 
 -- Net Downloader for database updates
-Socket.init()
+Network.init()
 function updateDatabase()
 	local state = 0
 	local txt = "Checking for updates..."
+	local old_txt = txt
 	local percent = 0
+	local old_percent = 0
 	local raw_data = ""
 	local data_size = 0
 	local received_size = 0
 	local data_offs = nil
+	System.setMessage("Updating database...", true)
+	System.setMessageProgMsg(txt)
 	while true do
 		if state == 0 then -- Connecting to the server
 			skt = Socket.connect("rinnegatamante.it",80)
@@ -76,24 +79,27 @@ function updateDatabase()
 			Socket.send(skt, payload)
 			state = 1
 			txt = "Connecting to the server..."
+			percent = 14
 		elseif state == 1 then -- Waiting for server response
 			txt = "Waiting for server response..."
 			raw_data = raw_data .. Socket.receive(skt, 8192)
 			if raw_data ~= "" then
 				state = 2
 			end
+			percent = 28
 		elseif state == 2 then -- Starting download
 			offs1, offs2 = string.find(raw_data, "Length: ")
 			offs3 = string.find(raw_data, "\r", offs2)
 			stub, data_offs = string.find(raw_data, "\r\n\r\n")
 			if data_offs ~= nil and offs2 ~= nil then
 				received_size = string.len(raw_data) - data_offs
-				data_size = math.tointeger(tonumber(string.sub(raw_data, offs2, offs3)))
+				data_size = tonumber(string.sub(raw_data, offs2, offs3))
 				txt = "Downloading database updates (" .. formatSize(received_size) .. " / " .. formatSize(data_size) .. ")"
 				percent = received_size / data_size
 				state = 3
 			end
-			raw_data = raw_data .. Socket.receive(skt, 8192)	
+			raw_data = raw_data .. Socket.receive(skt, 8192)
+			percent = 42
 		elseif state == 3 then -- Download phase
 			raw_data = raw_data .. Socket.receive(skt, 8192)
 			received_size = string.len(raw_data) - data_offs
@@ -102,38 +108,65 @@ function updateDatabase()
 			if received_size >= data_size then
 				state = 4
 			end
+			percent = 56
 		elseif state == 4 then -- Output writing
-			handle = io.open("ux0:/data/rinCheat/db_update.zip", FCREATE)
+			handle = System.openFile("ux0:/data/rinCheat/db_update.zip", FCREATE)
 			content = string.sub(raw_data, data_offs+1)
-			io.write(handle, content, string.len(content))
-			io.close(handle)
+			System.writeFile(handle, content, string.len(content))
+			System.closeFile(handle)
 			txt = "Installing updates..."
 			state = 5
+			percent = 70
 		elseif state == 5 then -- Output extraction
-			System.extractZIP("ux0:/data/rinCheat/db_update.zip", "ux0:/data/rinCheat")
+			System.extractZipAsync("ux0:/data/rinCheat/db_update.zip", "ux0:/data/rinCheat")
 			state = 6
+			percent = 85
 		elseif state == 6 then -- Savedata database update
-			System.deleteFile("ux0:/data/rinCheat/db_update.zip")
-			deleteDirectory("ux0:/data/rinCheat/SE_db")
-			System.rename("ux0:/data/rinCheat/rinCheat-master/SE_cheats_db", "ux0:/data/rinCheat/SE_db")
-			state = 7
+			if System.getAsyncState() ~= 0 then
+				System.deleteFile("ux0:/data/rinCheat/db_update.zip")
+				deleteDirectory("ux0:/data/rinCheat/SE_db")
+				System.rename("ux0:/data/rinCheat/rinCheat-master/SE_cheats_db", "ux0:/data/rinCheat/SE_db")
+				state = 7
+				percent = 99
+			end
 		elseif state == 7 then -- Realtime database update
 			deleteDirectory("ux0:/data/rinCheat/db")
 			System.rename("ux0:/data/rinCheat/rinCheat-master/cheats_db", "ux0:/data/rinCheat/db")
 			deleteDirectory("ux0:/data/rinCheat/rinCheat-master")
+			percent = 100
+			System.setMessageProgress(percent)
 			break
 		end
+		if txt ~= old_txt then
+			System.setMessageProgMsg(txt)
+			old_txt = txt
+		end
+		if percent ~= old_percent then
+			System.setMessageProgress(percent)
+			old_percent = percent
+		end
 		Graphics.initBlend()
-		Graphics.fillRect(200, 760, 200, 260, white)
-		Graphics.fillRect(201, 759, 201, 259, black)
-		Graphics.fillRect(205, 755, 230, 250, white)
-		Graphics.fillRect(205, 205+percent*550, 230, 250, cyan)
-		Graphics.debugPrint(205, 205, txt, white)
 		Graphics.termBlend()
 		Screen.flip()
-		Screen.waitVblankStart()
 	end
+	System.closeMessage()
 	Socket.close(skt)
+end
+
+-- Shows a Warning on screen
+function showWarning(text)
+	if text ~= nil then
+		System.setMessage(text, false, BUTTON_OK)
+		while true do
+			Graphics.initBlend()
+			Graphics.termBlend()
+			Screen.flip()
+			status = System.getMessageState()
+			if status ~= RUNNING then
+				break
+			end
+		end
+	end
 end
 
 -- Get GIT version
@@ -167,7 +200,7 @@ function getRemoteVersion(offline_ver)
 			stub, data_offs = string.find(raw_data, "\r\n\r\n")
 			if data_offs ~= nil and offs2 ~= nil then
 				received_size = string.len(raw_data) - data_offs
-				data_size = math.tointeger(tonumber(string.sub(raw_data, offs2, offs3)))	
+				data_size = tonumber(string.sub(raw_data, offs2, offs3))
 				state = 3
 			else
 				if Timer.getTime(timeout) > 3000 then
@@ -182,10 +215,10 @@ function getRemoteVersion(offline_ver)
 				state = 4
 			end
 		elseif state == 4 then -- Output writing
-			handle = io.open("ux0:/data/rinCheat/remote.lua", FCREATE)
+			handle = System.openFile("ux0:/data/rinCheat/remote.lua", FCREATE)
 			content = string.sub(raw_data, data_offs+1)
-			io.write(handle, content, string.len(content))
-			io.close(handle)
+			System.writeFile(handle, content, string.len(content))
+			System.closeFile(handle)
 			Socket.close(skt)
 			break
 		end
@@ -194,9 +227,9 @@ end
 
 -- Localize remote version file
 function localizeVersion()
-	handle = io.open("ux0:/data/rinCheat/remote.lua", FWRITE)
-	io.write(handle, "local", 5)
-	io.close(handle)
+	handle = System.openFile("ux0:/data/rinCheat/remote.lua", FWRITE)
+	System.writeFile(handle, "local", 5)
+	System.closeFile(handle)
 	System.rename("ux0:/data/rinCheat/remote.lua","ux0:/data/rinCheat/VERSION.lua")
 end
 
@@ -236,6 +269,10 @@ function checkUpdates()
 	end
 end
 
+if checkUpdates() then
+	updateDatabase()
+end
+
 -- Converts an integer to a string
 function int2str(num, size)
 	local tmp = 0
@@ -243,33 +280,10 @@ function int2str(num, size)
 	local extra_shift = 4 - size
 	while tmp < size do
 		tmp = tmp + 1
-		bytes = string.char((num<<((extra_shift+tmp-1)<<3))>>((extra_shift+size-1)<<3)) .. bytes
+		bytes = string.char(bit32.rshift(bit32.lshift(num,(bit32.lshift(extra_shift+tmp-1,3))),(bit32.lshift(extra_shift+size-1,3)))) .. bytes
 	end
 	return bytes
 end
-
--- GekiHEN contest splashscreen
-splash = Graphics.loadImage("app0:/splash.png")
-local tmr = Timer.new()
-spl = 0
-while Timer.getTime(tmr) < 3000 do
-	Graphics.initBlend()
-	Graphics.drawImage(0, 0, splash)
-	Graphics.termBlend()
-	Screen.flip()
-	Screen.waitVblankStart()
-	spl = spl + 1
-	if not updates_checked and spl > 3 then
-		updates_checked = true
-		if checkUpdates() then
-			Timer.pause(tmr)
-			updateDatabase()
-			Timer.resume(tmr)
-		end
-	end
-end
-Timer.destroy(tmr)
-Graphics.freeImage(splash)
 
 -- CRC32 Implementation
 local crc_tbl = {}
@@ -277,9 +291,9 @@ for idx=0, 255 do
 	local val = idx
 	for _=1, 8 do
 		if val % 2 == 1 then
-			val = 0xEDB88320 ~ (val >> 1)
+			val = bit32.bxor(0xEDB88320,bit32.rshift(val,1))
 		else
-			val = (val >> 1)
+			val = bit32.rshift(val,1)
 		end
 	end
 	crc_tbl[idx] = val
@@ -288,9 +302,9 @@ function crc32(buffer)
 	local hash = 0xFFFFFFFF
 	local len = string.len(buffer)
 	for idx=1, len do
-		hash = (crc_tbl[(hash ~ string.byte(buffer, idx)) & 255]) ~ (hash >> 8)
+		hash = bit32.bxor((crc_tbl[bit32.band(bit32.bxor(hash,string.byte(buffer, idx)),255)]),bit32.rshift(hash,8))
 	end	
-	return (hash ~ 0xFFFFFFFF)	
+	return bit32.bxor(hash,0xFFFFFFFF)	
 end
 
 -- Return index of last space for text argument
@@ -303,41 +317,10 @@ function LastSpace(text)
 	return start
 end
 
--- Shows a Warning on screen
-function showWarning(text)
-	if text ~= nil then
-		local text_lines = {}
-		while string.len(text) > 90 do
-			endl = 91 + LastSpace(string.sub(text,1,90))
-			table.insert(text_lines,string.sub(text,1,endl))
-			text = string.sub(text,endl+1,-1)
-		end
-		if string.len(text) > 0 then
-			table.insert(text_lines,text)
-		end
-		table.insert(text_lines, " ")
-		table.insert(text_lines, "Press START to continue.")
-		while true do
-			Graphics.initBlend()
-			Graphics.fillRect(10, 950,100, 125 + #text_lines * 20, grey)
-			for i, line in pairs(text_lines) do
-				Graphics.debugPrint(15, 100 + i*20, line, white)
-			end
-			Graphics.termBlend()
-			Screen.flip()
-			Screen.waitVblankStart()
-			local pad = Controls.read()
-			if Controls.check(pad, SCE_CTRL_START) then
-				break
-			end
-		end
-	end
-end
-
 -- Convert a 32 bit binary string to a integer
 function bin2int(str)
 	local b1, b2, b3, b4 = string.byte(str, 1, 4)
-	return (b4 << 24) + (b3 << 16) + (b2 << 8) + b1
+	return bit32.rshift(b4,24) + bit32.rshift(b3,16) + bit32.rshift(b2,8) + b1
 end
 
 -- Extracts title name from an SFO file
@@ -346,29 +329,53 @@ function extractTitle(file)
 	return data.title
 end
 
--- Scanning savegames folder
 local slots = {}
-local files = System.listDirectory("ux0:/data/savegames")
+local files = {}
 local savedatas = {}
-for i, entry in pairs(files) do
-	if entry.directory then
-		local slots = System.listDirectory("ux0:/data/savegames/"..entry.name)
-		for i, slot in pairs(slots) do
-			local slot_files = System.listDirectory("ux0:/data/savegames/"..entry.name.."/"..slot.name)
-			if slot_files ~= nil and #slot_files > 0 then
-				titleid = string.sub(entry.name,1,9)
-				if System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
-					name = "[" .. titleid .. "] " .. extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo")
-				else
-					name = "[" .. titleid .. "] Unknown Game"
+local svdt_idx = 1
+local part_idx = 1
+local partitions = {}
+local cur_part = ""
+table.insert(partitions, {["name"]="ux0"})
+table.insert(partitions, {["name"]="ur0"})
+table.insert(partitions, {["name"]="uma0"})
+
+
+-- Scanning savegames folder
+function scanSavegames(part)
+	cur_part = part
+	files = System.listDirectory(part .. ":/data/savegames")
+	if files == nil then
+		files = {}
+	else
+		for i, entry in pairs(files) do
+			if entry.directory then
+				slots = System.listDirectory(part .. ":/data/savegames/"..entry.name)
+				for i, slot in pairs(slots) do
+					local slot_files = System.listDirectory(part .. ":/data/savegames/"..entry.name.."/"..slot.name)
+					if slot_files ~= nil and #slot_files > 0 then
+						titleid = string.sub(entry.name,1,9)
+						if System.doesFileExist("ux0:/app/" .. titleid .. "/sce_sys/param.sfo") then
+							name = "[" .. titleid .. "] " .. extractTitle("ux0:/app/" .. titleid .. "/sce_sys/param.sfo")
+						else
+							if System.doesFileExist("ur0:/app/" .. titleid .. "/sce_sys/param.sfo") then
+								name = "[" .. titleid .. "] " .. extractTitle("ur0:/app/" .. titleid .. "/sce_sys/param.sfo")
+							else
+								if System.doesFileExist("uma0:/app/" .. titleid .. "/sce_sys/param.sfo") then
+									name = "[" .. titleid .. "] " .. extractTitle("uma0:/app/" .. titleid .. "/sce_sys/param.sfo")
+								else
+									name = "[" .. titleid .. "] Unknown Game"
+								end
+							end
+						end
+						table.insert(savedatas, {["name"]=name,["titleid"]=titleid})
+						break
+					end
 				end
-				table.insert(savedatas, {["name"]=name,["titleid"]=titleid})
-				break
 			end
 		end
 	end
 end
-local svdt_idx = 1
 
 -- Loads a cheat database
 cur_chts = {}
@@ -409,13 +416,43 @@ function renderMenu(tbl, idx, txt, err)
 	Graphics.termBlend()
 end
 
-Socket.term()
+Network.term()
 local oldpad = Controls.read()
 while true do	
 	local pad = Controls.read()
 	
+	-- Partition selection
+	if mode == -1 then
+		renderMenu(partitions, part_idx, "Select partition to scan", "No partitions available.")		
+		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) then
+			scanSavegames(partitions[part_idx].name)
+			mode = 0
+			st_draw = 1
+			slt_menu_idx = 1
+		elseif Controls.check(pad, SCE_CTRL_UP) and not Controls.check(oldpad, SCE_CTRL_UP) then
+			part_idx = part_idx - 1
+			if part_idx < 1 then
+				part_idx = #partitions
+			end
+			if part_idx > 25 then
+				st_draw = part_idx - 24
+			else
+				st_draw = 1
+			end
+		elseif Controls.check(pad, SCE_CTRL_DOWN) and not Controls.check(oldpad, SCE_CTRL_DOWN) then
+			part_idx = part_idx + 1
+			if part_idx > #partitions then
+				part_idx = 1
+			end
+			if part_idx > 25 then
+				st_draw = part_idx - 24
+			else
+				st_draw = 1
+			end
+		end
+	
 	-- Savedata selection
-	if mode == 0 then
+	elseif mode == 0 then
 		renderMenu(savedatas, svdt_idx, "Select game savedata to modify", "No savedata found.")		
 		if Controls.check(pad, SCE_CTRL_CROSS) and not Controls.check(oldpad, SCE_CTRL_CROSS) and #savedatas > 0 then
 			populateCheatsTable(savedatas[svdt_idx].titleid)
@@ -427,7 +464,7 @@ while true do
 			slots = {} -- Resetting slots table before generating it
 			local slt_idx = 0
 			while slt_idx <= 9 do
-				local test_dir = System.listDirectory("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slt_idx)
+				local test_dir = System.listDirectory(cur_part .. ":/data/savegames/"..cur_svdt.titleid.."/SLOT"..slt_idx)
 				if test_dir ~= nil then
 					table.insert(slots,{["name"] = "Slot " .. slt_idx, ["idx"] = slt_idx})
 				end
@@ -527,26 +564,26 @@ while true do
 	-- Cheat application
 	elseif mode == 3 then
 		if to_apply >= 0 then
-			handle = io.open("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FRDWR)
+			handle = System.openFile(cur_part .. ":/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FRDWR)
 			for i, offs in pairs(cur_chts[cht_idx].offsets) do
-				io.seek(handle, offs, SET)
-				io.write(handle, int2str(cur_chts[cht_idx].value,cur_chts[cht_idx].size), cur_chts[cht_idx].size)
+				System.seekFile(handle, offs, SET)
+				System.writeFile(handle, int2str(cur_chts[cht_idx].value,cur_chts[cht_idx].size), cur_chts[cht_idx].size)
 			end
 			
 			-- Applying CRC32 patch if needed
 			if needs_crc32 then
-				save_size = io.size(handle)
-				io.seek(handle, 4, SET)
-				save_buffer = io.read(handle, save_size)
+				save_size = System.sizeFile(handle)
+				System.seekFile(handle, 4, SET)
+				save_buffer = System.readFile(handle, save_size)
 				patched_crc = crc32(save_buffer)
-				io.close(handle)
-				System.deleteFile("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file)
-				handle = io.open("ux0:/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FCREATE)
-				io.write(handle, int2str(patched_crc, 4), 4)
-				io.write(handle, save_buffer, string.len(save_buffer))
+				System.closeFile(handle)
+				System.deleteFile(cur_part .. ":/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file)
+				handle = System.openFile(cur_part .. ":/data/savegames/"..cur_svdt.titleid.."/SLOT"..slots[slt_menu_idx].idx.."/"..cur_chts[cht_idx].file, FCREATE)
+				System.writeFile(handle, int2str(patched_crc, 4), 4)
+				System.writeFile(handle, save_buffer, string.len(save_buffer))
 			end
 			
-			io.close(handle)		
+			System.closeFile(handle)		
 			to_apply = -1
 		end
 		renderMenu({}, 0, "Cheat application", "Done! Press Cross to return to the cheats list.") -- Fake menu
@@ -556,6 +593,5 @@ while true do
 		end
 	end
 	Screen.flip()
-	Screen.waitVblankStart()
 	oldpad = pad
 end
