@@ -19,7 +19,7 @@
 #ifndef _THREADS_H_
 #define _THREADS_H_
 
-SceUID main_thread_thid; // Main thread thid
+extern SceUID main_thread_thid; // Main thread thid
  
 void pauseMainThread();
 void resumeMainThread();
