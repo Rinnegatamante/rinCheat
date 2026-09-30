@@ -23,6 +23,8 @@
 #include <psp2/io/stat.h>
 #include "threads.h"
 
+SceUID main_thread_thid;
+
 #define THREADS_RANGE 0x100000 // How many thread to scan starting from main thread
 
 extern int net_thread;
